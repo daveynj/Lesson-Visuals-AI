@@ -104,23 +104,23 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
   switch (slide.type) {
     case "title":
       return (
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold" style={{ color: textColor }}>{slide.title}</h2>
-          {slide.subtitle && <p className="text-sm opacity-80" style={{ color: textColor }}>{slide.subtitle}</p>}
-          <div className="flex justify-center gap-2 mt-2">
-            <Badge style={{ backgroundColor: accentColor, color: textColor }}>{slide.level}</Badge>
-            <Badge variant="outline" style={{ borderColor: textColor, color: textColor }}>{slide.topic}</Badge>
+        <div className="text-center space-y-3">
+          <h2 className="text-3xl font-bold" style={{ color: textColor }}>{slide.title}</h2>
+          {slide.subtitle && <p className="text-xl opacity-80" style={{ color: textColor }}>{slide.subtitle}</p>}
+          <div className="flex justify-center gap-3 mt-3">
+            <Badge className="text-lg px-4 py-2" style={{ backgroundColor: accentColor, color: textColor }}>{slide.level}</Badge>
+            <Badge variant="outline" className="text-lg px-4 py-2" style={{ borderColor: textColor, color: textColor }}>{slide.topic}</Badge>
           </div>
         </div>
       );
       
     case "objectives":
       return (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-center" style={{ color: textColor }}>{slide.title}</h3>
-          <ul className="space-y-2 text-sm">
+        <div className="space-y-4">
+          <h3 className="text-2xl font-semibold text-center" style={{ color: textColor }}>{slide.title}</h3>
+          <ul className="space-y-3 text-xl">
             {slide.objectives.map((obj, i) => (
-              <li key={i} className="flex items-start gap-2" style={{ color: textColor }}>
+              <li key={i} className="flex items-start gap-3" style={{ color: textColor }}>
                 <span style={{ color: accentColor }}>•</span>
                 <span>{obj}</span>
               </li>
@@ -131,25 +131,25 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
       
     case "vocabulary":
       return (
-        <div className="text-center space-y-2">
-          <h3 className="text-2xl font-bold" style={{ color: accentColor }}>{slide.term}</h3>
-          <p className="text-xs italic opacity-70" style={{ color: textColor }}>{slide.partOfSpeech}</p>
-          <p className="text-sm font-medium" style={{ color: textColor }}>{slide.definition}</p>
-          <p className="text-xs italic opacity-80" style={{ color: textColor }}>"{slide.example}"</p>
+        <div className="text-center space-y-3">
+          <h3 className="text-4xl font-bold" style={{ color: accentColor }}>{slide.term}</h3>
+          <p className="text-lg italic opacity-70" style={{ color: textColor }}>{slide.partOfSpeech}</p>
+          <p className="text-xl font-medium" style={{ color: textColor }}>{slide.definition}</p>
+          <p className="text-lg italic opacity-80" style={{ color: textColor }}>"{slide.example}"</p>
           {slide.pronunciation && (
-            <p className="text-xs opacity-60" style={{ color: textColor }}>{slide.pronunciation}</p>
+            <p className="text-lg opacity-60" style={{ color: textColor }}>{slide.pronunciation}</p>
           )}
         </div>
       );
       
     case "grammar":
       return (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold" style={{ color: textColor }}>{slide.title}</h3>
-          <p className="text-sm" style={{ color: textColor }}>{slide.explanation}</p>
+        <div className="space-y-3">
+          <h3 className="text-2xl font-semibold" style={{ color: textColor }}>{slide.title}</h3>
+          <p className="text-xl" style={{ color: textColor }}>{slide.explanation}</p>
           {slide.examples && slide.examples.length > 0 && (
-            <div className="mt-2 p-2 rounded" style={{ backgroundColor: `${accentColor}20` }}>
-              <p className="text-xs italic" style={{ color: textColor }}>{slide.examples[0]}</p>
+            <div className="mt-3 p-3 rounded" style={{ backgroundColor: `${accentColor}20` }}>
+              <p className="text-lg italic" style={{ color: textColor }}>{slide.examples[0]}</p>
             </div>
           )}
         </div>
@@ -157,32 +157,32 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
 
     case "reading":
       return (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold" style={{ color: textColor }}>{slide.title}</h3>
-          <p className="text-sm leading-relaxed" style={{ color: textColor }}>{slide.content}</p>
+        <div className="space-y-3">
+          <h3 className="text-2xl font-semibold" style={{ color: textColor }}>{slide.title}</h3>
+          <p className="text-xl leading-relaxed" style={{ color: textColor }}>{slide.content}</p>
         </div>
       );
 
     case "example":
       return (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold" style={{ color: accentColor }}>{slide.context}</h3>
-          <p className="text-sm leading-relaxed" style={{ color: textColor }}>{slide.sentence}</p>
+        <div className="space-y-3">
+          <h3 className="text-2xl font-semibold" style={{ color: accentColor }}>{slide.context}</h3>
+          <p className="text-xl leading-relaxed" style={{ color: textColor }}>{slide.sentence}</p>
           {slide.highlight && (
-            <Badge style={{ backgroundColor: accentColor, color: textColor }}>{slide.highlight}</Badge>
+            <Badge className="text-lg px-4 py-2" style={{ backgroundColor: accentColor, color: textColor }}>{slide.highlight}</Badge>
           )}
         </div>
       );
 
     case "activity":
       return (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold" style={{ color: accentColor }}>{slide.title}</h3>
-          <p className="text-sm" style={{ color: textColor }}>{slide.instructions}</p>
+        <div className="space-y-3">
+          <h3 className="text-2xl font-semibold" style={{ color: accentColor }}>{slide.title}</h3>
+          <p className="text-xl" style={{ color: textColor }}>{slide.instructions}</p>
           {slide.targetVocabulary && slide.targetVocabulary.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="flex flex-wrap gap-2 mt-3">
               {slide.targetVocabulary.map((word, i) => (
-                <Badge key={i} variant="outline" className="text-xs" style={{ borderColor: accentColor, color: textColor }}>
+                <Badge key={i} variant="outline" className="text-lg px-3 py-1" style={{ borderColor: accentColor, color: textColor }}>
                   {word}
                 </Badge>
               ))}
@@ -200,19 +200,19 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
         (typeof slide.question === 'object' ? (slide.question as { options?: string[] }).options : undefined);
       
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="text-center">
-            <Badge style={{ backgroundColor: accentColor, color: textColor }}>
+            <Badge className="text-lg px-4 py-2" style={{ backgroundColor: accentColor, color: textColor }}>
               Question {slide.questionNumber} of {slide.totalQuestions}
             </Badge>
           </div>
-          <p className="text-sm font-medium text-center" style={{ color: textColor }}>{questionText}</p>
+          <p className="text-xl font-medium text-center" style={{ color: textColor }}>{questionText}</p>
           {questionOptions && Array.isArray(questionOptions) && (
-            <div className="space-y-2 mt-3">
+            <div className="space-y-3 mt-4">
               {questionOptions.map((opt, i) => (
                 <div 
                   key={i} 
-                  className="p-2 rounded text-sm text-center"
+                  className="p-3 rounded text-xl text-center"
                   style={{ backgroundColor: `${accentColor}20`, color: textColor }}
                 >
                   {String.fromCharCode(65 + i)}. {typeof opt === 'string' ? opt : String(opt)}
@@ -225,12 +225,13 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
       
     case "summary":
       return (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-center" style={{ color: textColor }}>{slide.title}</h3>
-          <div className="flex flex-wrap justify-center gap-2">
+        <div className="space-y-4">
+          <h3 className="text-2xl font-semibold text-center" style={{ color: textColor }}>{slide.title}</h3>
+          <div className="flex flex-wrap justify-center gap-3">
             {slide.keyPoints.map((point, i) => (
               <Badge 
                 key={i} 
+                className="text-lg px-4 py-2"
                 style={{ backgroundColor: accentColor, color: textColor }}
               >
                 {point}
@@ -242,16 +243,16 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
       
     case "outro":
       return (
-        <div className="text-center space-y-3">
-          <h3 className="text-xl font-bold" style={{ color: accentColor }}>{slide.message}</h3>
+        <div className="text-center space-y-4">
+          <h3 className="text-3xl font-bold" style={{ color: accentColor }}>{slide.message}</h3>
           {slide.callToAction && (
-            <p className="text-sm" style={{ color: textColor }}>{slide.callToAction}</p>
+            <p className="text-xl" style={{ color: textColor }}>{slide.callToAction}</p>
           )}
         </div>
       );
       
     default:
-      return <p className="text-sm text-center" style={{ color: textColor }}>Slide content</p>;
+      return <p className="text-xl text-center" style={{ color: textColor }}>Slide content</p>;
   }
 }
 
