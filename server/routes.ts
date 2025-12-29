@@ -435,14 +435,38 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
             safety_filter_level: "block_medium_and_above",
           }
         }
-      ) as string[];
+      );
 
-      if (!output || output.length === 0) {
+      console.log("Replicate output type:", typeof output);
+      console.log("Replicate output:", JSON.stringify(output, null, 2));
+
+      // Handle different output formats from Replicate
+      let imageUrl: string;
+      if (typeof output === 'string') {
+        // Direct URL string
+        imageUrl = output;
+      } else if (Array.isArray(output) && output.length > 0) {
+        // Array of URLs
+        imageUrl = output[0];
+      } else if (output && typeof output === 'object') {
+        // Object with URL property
+        const outputObj = output as Record<string, unknown>;
+        if (typeof outputObj.url === 'string') {
+          imageUrl = outputObj.url;
+        } else if (typeof outputObj.image === 'string') {
+          imageUrl = outputObj.image;
+        } else if (typeof outputObj.output === 'string') {
+          imageUrl = outputObj.output;
+        } else {
+          console.error("Unexpected output format:", output);
+          return res.status(500).json({ error: "Unexpected image output format" });
+        }
+      } else {
+        console.error("No valid output from Replicate:", output);
         return res.status(500).json({ error: "No image data in response" });
       }
 
-      // Replicate returns URLs, fetch the image and convert to base64
-      const imageUrl = output[0];
+      // Fetch the image and convert to base64
       const imageResponse = await fetch(imageUrl);
       const imageBuffer = await imageResponse.arrayBuffer();
       const base64 = Buffer.from(imageBuffer).toString('base64');
