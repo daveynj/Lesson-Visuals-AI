@@ -156,6 +156,17 @@ function SlideTextContent({ slide }: { slide: Slide }) {
         </div>
       );
 
+    case "example":
+      return (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold" style={{ color: accentColor }}>{slide.context}</h3>
+          <p className="text-sm leading-relaxed" style={{ color: textColor }}>{slide.sentence}</p>
+          {slide.highlight && (
+            <Badge style={{ backgroundColor: accentColor, color: textColor }}>{slide.highlight}</Badge>
+          )}
+        </div>
+      );
+
     case "activity":
       return (
         <div className="space-y-2">

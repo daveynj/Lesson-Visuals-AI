@@ -1,45 +1,64 @@
-# Lesson to Reels - Social Media Image Generator
+# Lesson to Reels - Visual ESL Lesson Generator
 
 ## Overview
-A web application that transforms lesson JSON files into branded social media images. Users can upload lesson content, have AI analyze the vocabulary and context, and generate educational illustrations using the nano banana (Gemini) image generation model.
+A web application that transforms lesson JSON files into branded visual social media reels. Users upload ESL lesson content, and the app creates a complete slide-based visual lesson that learners can scroll through like Instagram/TikTok reels.
 
 ## Architecture
 
 ### Frontend (React + Vite)
-- **Main Page**: `/client/src/pages/home.tsx` - Multi-step workflow (Upload → Analysis → Generate → Results)
-- **Styling**: Brand colors #edc437 (yellow), #051d40 (navy), #fdfdfd (off-white)
-- **Components**: Uses shadcn/ui components
+- **Main Page**: `/client/src/pages/home.tsx` - 4-step workflow (Upload → Preview → Generating → Results)
+- **Slide Types**: Title, Objectives, Vocabulary, Grammar, Reading, Activity, Quiz, Summary, Outro
+- **Brand Colors**: #edc437 (yellow), #051d40 (navy), #fdfdfd (off-white)
+- **Components**: shadcn/ui components with branded styling
 
 ### Backend (Express)
-- **Routes**: `/server/routes.ts` - API endpoints for lesson analysis and image generation
+- **Routes**: `/server/routes.ts` - API endpoints for lesson-to-slides conversion and image generation
 - **AI Integrations**: 
-  - OpenAI (gpt-5.1) for content analysis and smart prompt generation
-  - Gemini (gemini-2.5-flash-image / nano banana) for image generation
+  - OpenAI (gpt-5.1) for lesson context analysis and smart prompt generation
+  - Gemini (gemini-2.5-flash-image / nano banana) for branded illustration generation
 
 ### Shared Types
-- **Schema**: `/shared/schema.ts` - TypeScript types for lessons, vocabulary, and generated images
+- **Schema**: `/shared/schema.ts` - Comprehensive slide types for visual lesson reels
 
 ## Key Features
-1. **File Upload**: Drag-and-drop JSON lesson files
-2. **AI Lesson Analysis**: Extracts vocabulary and generates contextual summaries
-3. **Smart Prompt Generation**: Creates enhanced image prompts based on lesson context
-4. **Branded Image Generation**: Uses nano banana to create consistent, branded illustrations
-5. **Bulk Download**: Download all generated images at once
+1. **Lesson Upload**: Drag-and-drop JSON lesson files
+2. **Slide Blueprint Generation**: Automatically maps lesson sections to appropriate slide types
+3. **Visual Slides**: AI-generated illustrations for title, vocabulary, grammar, and reading slides
+4. **Text-Only Slides**: Branded text layouts for objectives, activities, quizzes, and summaries
+5. **Reel Preview**: Scrollable slide-by-slide preview with navigation
+6. **Batch Download**: Export all slides as images
+
+## Slide Types
+
+| Type | Requires Image | Content |
+|------|----------------|---------|
+| Title | Yes | Lesson name, level, topic with hero illustration |
+| Objectives | No | Learning goals in branded text layout |
+| Vocabulary | Yes | Word, definition, example with AI illustration |
+| Grammar | Yes | Concept explanation with visual metaphor |
+| Reading | Yes | Passage content with atmospheric illustration |
+| Activity | No | Instructions and target vocabulary |
+| Quiz | No | Question and options in branded layout |
+| Summary | No | Key vocabulary recap |
+| Outro | Yes | Completion message with celebratory illustration |
 
 ## API Endpoints
 
-### POST /api/analyze-lesson
-Analyzes a lesson JSON and extracts vocabulary with AI-generated context.
+### POST /api/lesson-to-slides
+Converts lesson JSON to slide blueprints with type-specific layouts.
 
-### POST /api/generate-smart-prompts
-Creates enhanced image prompts using lesson context and brand guidelines.
+### POST /api/generate-lesson-context
+Creates AI-generated context summary for consistent image prompts.
 
-### POST /api/generate-vocab-image
-Generates a single vocabulary image using Gemini nano banana.
+### POST /api/generate-slide-prompt
+Generates enhanced image prompts for visual slides.
+
+### POST /api/generate-slide-image
+Creates branded illustrations using Gemini nano banana.
 
 ## Brand Colors
-- Primary: #edc437 (Golden Yellow) - CTAs, highlights
-- Secondary: #051d40 (Navy Blue) - Headers, text
+- Primary: #edc437 (Golden Yellow) - Accents, highlights, CTAs
+- Secondary: #051d40 (Navy Blue) - Headers, text overlays, borders
 - Background: #fdfdfd (Off-White) - Clean backgrounds
 
 ## Development
@@ -48,7 +67,8 @@ npm run dev  # Start development server on port 5000
 ```
 
 ## Recent Changes
-- Initial implementation of lesson-to-image workflow
-- Integrated OpenAI for content analysis
-- Integrated Gemini nano banana for image generation
-- Built complete 4-step UI workflow
+- Pivoted from vocabulary-only images to complete visual lesson reels
+- Added 10 distinct slide types with appropriate layouts
+- Implemented slide-by-slide preview with navigation
+- Added batch image generation with progress tracking
+- Branded text layouts for non-visual slides (quizzes, activities)
