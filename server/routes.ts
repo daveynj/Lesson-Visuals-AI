@@ -468,6 +468,87 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
     }
   });
 
+  // Rewrite reading text using Kimi K2 to include all vocabulary
+  app.post("/api/rewrite-reading-text", async (req, res) => {
+    try {
+      const { lesson } = req.body as { lesson: Lesson };
+      
+      if (!lesson) {
+        return res.status(400).json({ error: "Lesson data is required" });
+      }
+
+      // Extract all vocabulary terms
+      const vocabularyWords = lesson.content.sections
+        .flatMap(s => s.words || []);
+      
+      const vocabList = vocabularyWords.map(w => 
+        `- ${w.term} (${w.partOfSpeech}): ${w.definition}`
+      ).join("\n");
+
+      const vocabTerms = vocabularyWords.map(w => w.term).join(", ");
+
+      const prompt = `You are an expert ESL content writer. Rewrite the reading passage for a ${lesson.cefrLevel} level ESL lesson about "${lesson.topic}".
+
+REQUIREMENTS:
+1. Write exactly 2 paragraphs that will fit on separate slides (each paragraph should be 3-4 sentences, about 40-60 words)
+2. You MUST naturally incorporate ALL of these vocabulary words: ${vocabTerms}
+3. Make the text flow naturally and be engaging for ${lesson.cefrLevel} learners
+4. Use appropriate grammar and sentence complexity for ${lesson.cefrLevel} level
+5. The topic is: ${lesson.topic}
+
+VOCABULARY TO USE (you must use every word):
+${vocabList}
+
+IMPORTANT: 
+- Each paragraph should use 2-3 vocabulary words naturally
+- Keep sentences clear and not too complex for ${lesson.cefrLevel} level
+- Make the content educational and interesting
+
+Respond with ONLY a JSON object in this exact format:
+{
+  "paragraph1": "First paragraph text here...",
+  "paragraph2": "Second paragraph text here..."
+}`;
+
+      const response = await openrouter.chat.completions.create({
+        model: "moonshotai/kimi-k2",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 500,
+      });
+
+      const content = response.choices[0]?.message?.content || "";
+      
+      // Parse the JSON response
+      let paragraphs;
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          paragraphs = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON found in response");
+        }
+      } catch (parseError) {
+        console.error("Failed to parse Kimi K2 response:", content);
+        // Fallback: split by double newline or create default
+        const parts = content.split(/\n\n+/).filter(p => p.trim().length > 20);
+        paragraphs = {
+          paragraph1: parts[0] || `Learning about ${lesson.topic} helps us understand important concepts.`,
+          paragraph2: parts[1] || `These vocabulary words are useful in everyday situations.`,
+        };
+      }
+
+      res.json({ 
+        paragraph1: paragraphs.paragraph1,
+        paragraph2: paragraphs.paragraph2,
+        vocabularyUsed: vocabTerms,
+      });
+    } catch (error) {
+      console.error("Error rewriting reading text:", error);
+      res.status(500).json({ error: "Failed to rewrite reading text" });
+    }
+  });
+
   // Generate lesson context
   app.post("/api/generate-lesson-context", async (req, res) => {
     try {

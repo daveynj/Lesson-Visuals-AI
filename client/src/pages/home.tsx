@@ -286,7 +286,62 @@ export default function Home() {
 
       // Convert lesson to slides
       const slidesResponse = await apiRequest("POST", "/api/lesson-to-slides", { lesson: data });
-      const reelData = await slidesResponse.json() as LessonReel;
+      let reelData = await slidesResponse.json() as LessonReel;
+
+      // Rewrite reading text using Kimi K2 with all vocabulary
+      try {
+        const readingResponse = await apiRequest("POST", "/api/rewrite-reading-text", { lesson: data });
+        const readingData = await readingResponse.json() as { 
+          paragraph1: string; 
+          paragraph2: string; 
+          vocabularyUsed: string;
+        };
+
+        // Find the reading slide and replace with 2 slides
+        const readingIndex = reelData.slides.findIndex(s => s.slide.type === "reading");
+        if (readingIndex !== -1) {
+          const originalReading = reelData.slides[readingIndex].slide as { title: string };
+          const baseTitle = originalReading.title?.replace(/^Reading Text:\s*/i, "") || "Reading";
+          
+          // Create 2 reading slides
+          const reading1 = {
+            slide: {
+              id: Math.random().toString(36).substring(2, 9),
+              type: "reading" as const,
+              sequence: reelData.slides[readingIndex].slide.sequence,
+              requiresImage: true,
+              title: `${baseTitle} (1/2)`,
+              content: readingData.paragraph1,
+              part: 1,
+              totalParts: 2,
+            },
+            imageData: undefined,
+            imagePrompt: undefined,
+          };
+          
+          const reading2 = {
+            slide: {
+              id: Math.random().toString(36).substring(2, 9),
+              type: "reading" as const,
+              sequence: reelData.slides[readingIndex].slide.sequence + 0.5,
+              requiresImage: true,
+              title: `${baseTitle} (2/2)`,
+              content: readingData.paragraph2,
+              part: 2,
+              totalParts: 2,
+            },
+            imageData: undefined,
+            imagePrompt: undefined,
+          };
+
+          // Replace the single reading slide with 2 slides
+          reelData.slides.splice(readingIndex, 1, reading1, reading2);
+          reelData.totalSlides = reelData.slides.length;
+        }
+      } catch (readingError) {
+        console.error("Failed to rewrite reading text:", readingError);
+      }
+
       setReel(reelData);
 
       // Generate lesson context for image prompts
