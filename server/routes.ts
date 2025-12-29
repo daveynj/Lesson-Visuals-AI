@@ -487,27 +487,26 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
 
       const vocabTerms = vocabularyWords.map(w => w.term).join(", ");
 
-      const prompt = `You are an expert ESL content writer. Rewrite the reading passage for a ${lesson.cefrLevel} level ESL lesson about "${lesson.topic}".
+      const prompt = `You are an expert ESL content writer. Write a VERY SHORT reading passage for a ${lesson.cefrLevel} level ESL lesson about "${lesson.topic}".
 
-REQUIREMENTS:
-1. Write exactly 2 paragraphs that will fit on separate slides (each paragraph should be 3-4 sentences, about 40-60 words)
+CRITICAL REQUIREMENTS:
+1. Write exactly 2 SHORT paragraphs (each paragraph MUST be only 2-3 sentences, MAX 30 words each)
 2. You MUST naturally incorporate ALL of these vocabulary words: ${vocabTerms}
-3. Make the text flow naturally and be engaging for ${lesson.cefrLevel} learners
-4. Use appropriate grammar and sentence complexity for ${lesson.cefrLevel} level
-5. The topic is: ${lesson.topic}
+3. Keep it simple and engaging for ${lesson.cefrLevel} learners
+4. The topic is: ${lesson.topic}
 
 VOCABULARY TO USE (you must use every word):
 ${vocabList}
 
 IMPORTANT: 
-- Each paragraph should use 2-3 vocabulary words naturally
-- Keep sentences clear and not too complex for ${lesson.cefrLevel} level
-- Make the content educational and interesting
+- Each paragraph MUST be under 30 words - this is critical for fitting on mobile slides
+- Use simple, short sentences
+- Distribute vocabulary words between both paragraphs
 
 Respond with ONLY a JSON object in this exact format:
 {
-  "paragraph1": "First paragraph text here...",
-  "paragraph2": "Second paragraph text here..."
+  "paragraph1": "Short paragraph here (max 30 words)...",
+  "paragraph2": "Short paragraph here (max 30 words)..."
 }`;
 
       const response = await openrouter.chat.completions.create({
