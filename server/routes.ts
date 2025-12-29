@@ -423,9 +423,9 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
 
 Style: Clean, modern educational illustration with a minimalist aesthetic. Use golden yellow (#edc437) and navy blue (#051d40) as accent colors. Off-white background (#fdfdfd). No text in the image. Square format, high quality, professional illustration for social media educational content.`;
 
-      // Use Replicate's flux-schnell model for fast image generation
+      // Use Replicate's google/imagen-4-fast model for fast image generation
       const output = await replicate.run(
-        "black-forest-labs/flux-schnell",
+        "google/imagen-4-fast",
         {
           input: {
             prompt: enhancedPrompt,
