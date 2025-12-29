@@ -191,7 +191,19 @@ function lessonToSlides(lesson: Lesson): Slide[] {
 
       case "quiz":
         if (section.questions) {
-          section.questions.slice(0, 5).forEach((question, idx) => {
+          section.questions.slice(0, 5).forEach((questionData, idx) => {
+            // Handle both string and object question formats
+            let questionText: string;
+            let questionOptions: string[] | undefined;
+            
+            if (typeof questionData === 'object' && questionData !== null) {
+              const qObj = questionData as { question?: string; options?: string[] };
+              questionText = qObj.question || JSON.stringify(questionData);
+              questionOptions = qObj.options;
+            } else {
+              questionText = String(questionData);
+            }
+            
             const quizSlide: QuizSlide = {
               id: generateId(),
               type: "quiz",
@@ -199,7 +211,8 @@ function lessonToSlides(lesson: Lesson): Slide[] {
               requiresImage: false,
               questionNumber: idx + 1,
               totalQuestions: Math.min(section.questions!.length, 5),
-              question: question,
+              question: questionText,
+              options: questionOptions,
             };
             slides.push(quizSlide);
           });

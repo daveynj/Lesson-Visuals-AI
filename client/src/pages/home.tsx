@@ -185,6 +185,13 @@ function SlideTextContent({ slide }: { slide: Slide }) {
       );
       
     case "quiz":
+      // Handle question as either string or object
+      const questionText = typeof slide.question === 'object' 
+        ? (slide.question as { question?: string }).question || JSON.stringify(slide.question)
+        : slide.question;
+      const questionOptions = slide.options || 
+        (typeof slide.question === 'object' ? (slide.question as { options?: string[] }).options : undefined);
+      
       return (
         <div className="space-y-3">
           <div className="text-center">
@@ -192,16 +199,16 @@ function SlideTextContent({ slide }: { slide: Slide }) {
               Question {slide.questionNumber} of {slide.totalQuestions}
             </Badge>
           </div>
-          <p className="text-sm font-medium text-center" style={{ color: textColor }}>{slide.question}</p>
-          {slide.options && (
+          <p className="text-sm font-medium text-center" style={{ color: textColor }}>{questionText}</p>
+          {questionOptions && Array.isArray(questionOptions) && (
             <div className="space-y-2 mt-3">
-              {slide.options.map((opt, i) => (
+              {questionOptions.map((opt, i) => (
                 <div 
                   key={i} 
                   className="p-2 rounded text-sm text-center"
                   style={{ backgroundColor: `${accentColor}20`, color: textColor }}
                 >
-                  {String.fromCharCode(65 + i)}. {opt}
+                  {String.fromCharCode(65 + i)}. {typeof opt === 'string' ? opt : String(opt)}
                 </div>
               ))}
             </div>
