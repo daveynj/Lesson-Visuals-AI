@@ -424,20 +424,31 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
 Style: Clean, modern educational illustration with a minimalist aesthetic. Warm golden yellow and deep navy blue as accent colors. Light off-white background. No text, no words, no letters in the image. Vertical format, high quality, professional illustration for social media educational content.`;
 
       // Use Replicate's google/imagen-4-fast model for fast image generation
-      const output = await replicate.run(
-        "google/imagen-4-fast",
-        {
-          input: {
-            prompt: enhancedPrompt,
-            aspect_ratio: "9:16",
-            output_format: "png",
-            enable_prompt_rewriting: false,
-            safety_filter_level: "block_medium_and_above",
-          }
+      // Use predictions API to avoid streaming issues
+      const prediction = await replicate.predictions.create({
+        model: "google/imagen-4-fast",
+        input: {
+          prompt: enhancedPrompt,
+          aspect_ratio: "9:16",
+          output_format: "png",
+          enable_prompt_rewriting: false,
+          safety_filter_level: "block_medium_and_above",
         }
-      );
+      });
 
-      console.log("Replicate output type:", typeof output);
+      // Wait for the prediction to complete
+      let completedPrediction = await replicate.predictions.get(prediction.id);
+      while (completedPrediction.status !== "succeeded" && completedPrediction.status !== "failed") {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        completedPrediction = await replicate.predictions.get(prediction.id);
+      }
+
+      if (completedPrediction.status === "failed") {
+        console.error("Prediction failed:", completedPrediction.error);
+        return res.status(500).json({ error: "Image generation failed" });
+      }
+
+      const output = completedPrediction.output;
       console.log("Replicate output:", JSON.stringify(output, null, 2));
 
       // Handle different output formats from Replicate
@@ -448,22 +459,9 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
       } else if (Array.isArray(output) && output.length > 0) {
         // Array of URLs
         imageUrl = output[0];
-      } else if (output && typeof output === 'object') {
-        // Object with URL property
-        const outputObj = output as Record<string, unknown>;
-        if (typeof outputObj.url === 'string') {
-          imageUrl = outputObj.url;
-        } else if (typeof outputObj.image === 'string') {
-          imageUrl = outputObj.image;
-        } else if (typeof outputObj.output === 'string') {
-          imageUrl = outputObj.output;
-        } else {
-          console.error("Unexpected output format:", output);
-          return res.status(500).json({ error: "Unexpected image output format" });
-        }
       } else {
-        console.error("No valid output from Replicate:", output);
-        return res.status(500).json({ error: "No image data in response" });
+        console.error("Unexpected output format:", output);
+        return res.status(500).json({ error: "Unexpected image output format" });
       }
 
       // Fetch the image and convert to base64
