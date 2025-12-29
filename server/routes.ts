@@ -177,16 +177,7 @@ function lessonToSlides(lesson: Lesson): Slide[] {
         break;
 
       case "activity":
-        const activitySlide: ActivitySlide = {
-          id: generateId(),
-          type: "activity",
-          sequence: sequence++,
-          requiresImage: false,
-          title: section.title,
-          instructions: section.procedure || section.content || "Complete the following activity.",
-          targetVocabulary: section.targetVocabulary,
-        };
-        slides.push(activitySlide);
+        // Skip activity slides - not necessary for visual reels
         break;
 
       case "quiz":

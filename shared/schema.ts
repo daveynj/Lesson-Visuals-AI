@@ -187,6 +187,8 @@ export const readingSlideSchema = slideBaseSchema.extend({
   type: z.literal("reading"),
   title: z.string(),
   content: z.string(),
+  part: z.number().optional(),
+  totalParts: z.number().optional(),
   imagePrompt: z.string().optional(),
 });
 
