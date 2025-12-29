@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import html2canvas from "html2canvas";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,12 +47,13 @@ function SlideTypeIcon({ type }: { type: string }) {
   }
 }
 
-function SlidePreview({ slide, imageData }: { slide: Slide; imageData?: string }) {
+function SlidePreview({ slide, imageData, slideRef }: { slide: Slide; imageData?: string; slideRef?: React.RefObject<HTMLDivElement> }) {
   const baseStyle = "aspect-[9/16] rounded-md flex flex-col overflow-hidden";
   
   if (imageData) {
     return (
       <div 
+        ref={slideRef}
         className={baseStyle}
         style={{ 
           backgroundImage: `url(${imageData})`,
@@ -59,8 +61,11 @@ function SlidePreview({ slide, imageData }: { slide: Slide; imageData?: string }
           backgroundPosition: "center",
         }}
       >
-        <div className="flex-1 flex flex-col justify-end p-4 bg-gradient-to-t from-[#051d40]/90 via-[#051d40]/50 to-transparent">
-          <SlideTextContent slide={slide} />
+        {/* Strong gradient overlay for text readability */}
+        <div className="flex-1 flex flex-col justify-end p-4" style={{
+          background: "linear-gradient(to top, rgba(5,29,64,0.95) 0%, rgba(5,29,64,0.85) 30%, rgba(5,29,64,0.4) 70%, transparent 100%)"
+        }}>
+          <SlideTextContent slide={slide} onImage={true} />
         </div>
       </div>
     );
@@ -68,6 +73,7 @@ function SlidePreview({ slide, imageData }: { slide: Slide; imageData?: string }
 
   return (
     <div 
+      ref={slideRef}
       className={baseStyle}
       style={{ backgroundColor: BRAND_COLORS.background }}
     >
@@ -84,14 +90,15 @@ function SlidePreview({ slide, imageData }: { slide: Slide; imageData?: string }
         </Badge>
       </div>
       <div className="flex-1 p-4 flex flex-col justify-center">
-        <SlideTextContent slide={slide} />
+        <SlideTextContent slide={slide} onImage={false} />
       </div>
     </div>
   );
 }
 
-function SlideTextContent({ slide }: { slide: Slide }) {
-  const textColor = "#051d40";
+function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: boolean }) {
+  // Use white text on image backgrounds, navy text on light backgrounds
+  const textColor = onImage ? "#ffffff" : "#051d40";
   const accentColor = "#edc437";
 
   switch (slide.type) {
@@ -398,29 +405,197 @@ export default function Home() {
     }
   };
 
-  const downloadSlide = (genSlide: GeneratedSlide) => {
-    if (!genSlide.imageData) return;
+  const downloadSlideAsImage = async (genSlide: GeneratedSlide, slideIndex: number): Promise<void> => {
+    // Create a hidden container for rendering
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    container.style.width = "1080px"; // Full resolution for social media
+    container.style.height = "1920px"; // 9:16 aspect ratio
+    document.body.appendChild(container);
+
+    // Create the slide element
+    const slideEl = document.createElement("div");
+    slideEl.style.width = "100%";
+    slideEl.style.height = "100%";
+    slideEl.style.display = "flex";
+    slideEl.style.flexDirection = "column";
+    slideEl.style.fontFamily = "system-ui, -apple-system, sans-serif";
     
-    const link = document.createElement("a");
-    link.href = genSlide.imageData;
-    link.download = `slide-${genSlide.slide.sequence + 1}-${genSlide.slide.type}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const slide = genSlide.slide;
+    
+    if (genSlide.imageData) {
+      // Image slide with text overlay
+      slideEl.style.backgroundImage = `url(${genSlide.imageData})`;
+      slideEl.style.backgroundSize = "cover";
+      slideEl.style.backgroundPosition = "center";
+      
+      const overlay = document.createElement("div");
+      overlay.style.flex = "1";
+      overlay.style.display = "flex";
+      overlay.style.flexDirection = "column";
+      overlay.style.justifyContent = "flex-end";
+      overlay.style.padding = "60px";
+      overlay.style.background = "linear-gradient(to top, rgba(5,29,64,0.95) 0%, rgba(5,29,64,0.85) 30%, rgba(5,29,64,0.4) 70%, transparent 100%)";
+      
+      overlay.innerHTML = renderSlideTextForDownload(slide, true);
+      slideEl.appendChild(overlay);
+    } else {
+      // Text-only slide
+      slideEl.style.backgroundColor = BRAND_COLORS.background;
+      
+      const header = document.createElement("div");
+      header.style.padding = "40px";
+      header.style.textAlign = "center";
+      header.style.backgroundColor = BRAND_COLORS.secondary;
+      header.innerHTML = `<span style="background-color: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.secondary}; padding: 8px 16px; border-radius: 4px; font-size: 24px; font-weight: 600;">${slide.type.toUpperCase()}</span>`;
+      
+      const content = document.createElement("div");
+      content.style.flex = "1";
+      content.style.padding = "60px";
+      content.style.display = "flex";
+      content.style.flexDirection = "column";
+      content.style.justifyContent = "center";
+      content.innerHTML = renderSlideTextForDownload(slide, false);
+      
+      slideEl.appendChild(header);
+      slideEl.appendChild(content);
+    }
+    
+    container.appendChild(slideEl);
+    
+    try {
+      const canvas = await html2canvas(slideEl, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+      });
+      
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = `slide-${slideIndex + 1}-${slide.type}.png`;
+      link.click();
+    } finally {
+      document.body.removeChild(container);
+    }
   };
 
-  const downloadAll = () => {
+  const renderSlideTextForDownload = (slide: Slide, onImage: boolean): string => {
+    const textColor = onImage ? "#ffffff" : "#051d40";
+    const accentColor = "#edc437";
+    
+    switch (slide.type) {
+      case "title":
+        return `
+          <div style="text-align: center;">
+            <h2 style="font-size: 56px; font-weight: bold; color: ${textColor}; margin-bottom: 16px;">${slide.title}</h2>
+            ${slide.subtitle ? `<p style="font-size: 28px; opacity: 0.8; color: ${textColor};">${slide.subtitle}</p>` : ""}
+            <div style="display: flex; justify-content: center; gap: 16px; margin-top: 24px;">
+              <span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 8px 20px; border-radius: 4px; font-size: 24px;">${slide.level}</span>
+              <span style="border: 2px solid ${textColor}; color: ${textColor}; padding: 8px 20px; border-radius: 4px; font-size: 24px;">${slide.topic}</span>
+            </div>
+          </div>
+        `;
+      case "vocabulary":
+        return `
+          <div style="text-align: center;">
+            <h3 style="font-size: 64px; font-weight: bold; color: ${accentColor}; margin-bottom: 16px;">${slide.term}</h3>
+            <p style="font-size: 24px; font-style: italic; opacity: 0.7; color: ${textColor};">${slide.partOfSpeech}</p>
+            <p style="font-size: 32px; font-weight: 500; color: ${textColor}; margin-top: 24px;">${slide.definition}</p>
+            <p style="font-size: 28px; font-style: italic; opacity: 0.8; color: ${textColor}; margin-top: 16px;">"${slide.example}"</p>
+          </div>
+        `;
+      case "grammar":
+        return `
+          <div>
+            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 24px;">${slide.title}</h3>
+            <p style="font-size: 32px; color: ${textColor}; line-height: 1.5;">${slide.explanation}</p>
+            ${slide.examples?.[0] ? `<div style="margin-top: 32px; padding: 24px; background-color: ${accentColor}20; border-radius: 8px;"><p style="font-size: 28px; font-style: italic; color: ${textColor};">${slide.examples[0]}</p></div>` : ""}
+          </div>
+        `;
+      case "reading":
+        return `
+          <div>
+            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 24px;">${slide.title}</h3>
+            <p style="font-size: 28px; color: ${textColor}; line-height: 1.6;">${slide.content}</p>
+          </div>
+        `;
+      case "example":
+        return `
+          <div>
+            <h3 style="font-size: 48px; font-weight: 600; color: ${accentColor}; margin-bottom: 24px;">${slide.context}</h3>
+            <p style="font-size: 32px; color: ${textColor}; line-height: 1.5;">${slide.sentence}</p>
+            ${slide.highlight ? `<span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 8px 20px; border-radius: 4px; font-size: 24px; margin-top: 24px; display: inline-block;">${slide.highlight}</span>` : ""}
+          </div>
+        `;
+      case "activity":
+        return `
+          <div>
+            <h3 style="font-size: 48px; font-weight: 600; color: ${accentColor}; margin-bottom: 24px;">${slide.title}</h3>
+            <p style="font-size: 28px; color: ${textColor}; line-height: 1.5;">${slide.instructions}</p>
+            ${slide.targetVocabulary?.length ? `<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px;">${slide.targetVocabulary.map(word => `<span style="border: 2px solid ${accentColor}; color: ${textColor}; padding: 8px 16px; border-radius: 4px; font-size: 20px;">${word}</span>`).join("")}</div>` : ""}
+          </div>
+        `;
+      case "objectives":
+        return `
+          <div style="text-align: center;">
+            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 32px;">${slide.title}</h3>
+            <ul style="list-style: none; padding: 0;">
+              ${slide.objectives.map(obj => `<li style="font-size: 28px; color: ${textColor}; margin-bottom: 20px; display: flex; align-items: start; gap: 16px;"><span style="color: ${accentColor}; font-size: 32px;">•</span><span>${obj}</span></li>`).join("")}
+            </ul>
+          </div>
+        `;
+      case "quiz":
+        const questionText = typeof slide.question === 'object' 
+          ? (slide.question as { question?: string }).question || ""
+          : slide.question;
+        const opts = slide.options || (typeof slide.question === 'object' ? (slide.question as { options?: string[] }).options : undefined);
+        return `
+          <div style="text-align: center;">
+            <span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 8px 20px; border-radius: 4px; font-size: 24px;">Question ${slide.questionNumber} of ${slide.totalQuestions}</span>
+            <p style="font-size: 36px; font-weight: 500; color: ${textColor}; margin-top: 40px;">${questionText}</p>
+            ${opts ? `<div style="margin-top: 40px;">${opts.map((opt, i) => `<div style="background-color: ${accentColor}20; padding: 20px; border-radius: 8px; margin-bottom: 16px; font-size: 28px; color: ${textColor};">${String.fromCharCode(65 + i)}. ${opt}</div>`).join("")}</div>` : ""}
+          </div>
+        `;
+      case "summary":
+        return `
+          <div style="text-align: center;">
+            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 32px;">${slide.title}</h3>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
+              ${slide.keyPoints.map(point => `<span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 12px 24px; border-radius: 4px; font-size: 24px;">${point}</span>`).join("")}
+            </div>
+          </div>
+        `;
+      case "outro":
+        return `
+          <div style="text-align: center;">
+            <h3 style="font-size: 56px; font-weight: bold; color: ${accentColor}; margin-bottom: 24px;">${slide.message}</h3>
+            ${slide.callToAction ? `<p style="font-size: 32px; color: ${textColor};">${slide.callToAction}</p>` : ""}
+          </div>
+        `;
+      default:
+        return `<p style="font-size: 28px; color: ${textColor};">Slide content</p>`;
+    }
+  };
+
+  const downloadAll = async () => {
     if (!reel) return;
     
-    reel.slides.forEach((genSlide, index) => {
-      if (genSlide.imageData) {
-        setTimeout(() => downloadSlide(genSlide), index * 200);
-      }
+    toast({
+      title: "Preparing downloads",
+      description: `Preparing ${reel.slides.length} slides for download...`,
     });
     
+    for (let i = 0; i < reel.slides.length; i++) {
+      await downloadSlideAsImage(reel.slides[i], i);
+      // Small delay between downloads to prevent browser issues
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    
     toast({
-      title: "Downloading slides",
-      description: `Downloading ${reel.slides.filter(s => s.imageData).length} images`,
+      title: "Download complete",
+      description: `Downloaded ${reel.slides.length} slides`,
     });
   };
 
@@ -736,18 +911,16 @@ export default function Home() {
                         <ChevronRight className="w-4 h-4" />
                       </Button>
                     </div>
-                    {reel.slides[currentSlideIndex].imageData && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-4 gap-2"
-                        onClick={() => downloadSlide(reel.slides[currentSlideIndex])}
-                        data-testid="button-download-current"
-                      >
-                        <Download className="w-4 h-4" />
-                        Download This Slide
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4 gap-2"
+                      onClick={() => downloadSlideAsImage(reel.slides[currentSlideIndex], currentSlideIndex)}
+                      data-testid="button-download-current"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download This Slide
+                    </Button>
                   </div>
                 </div>
               </CardContent>
