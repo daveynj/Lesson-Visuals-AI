@@ -421,7 +421,7 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
 
       const enhancedPrompt = `${prompt}
 
-Style: Clean, modern educational illustration with a minimalist aesthetic. Use golden yellow (#edc437) and navy blue (#051d40) as accent colors. Off-white background (#fdfdfd). No text in the image. Square format, high quality, professional illustration for social media educational content.`;
+Style: Clean, modern educational illustration with a minimalist aesthetic. Warm golden yellow and deep navy blue as accent colors. Light off-white background. No text, no words, no letters in the image. Vertical format, high quality, professional illustration for social media educational content.`;
 
       // Use Replicate's google/imagen-4-fast model for fast image generation
       const output = await replicate.run(
@@ -429,9 +429,10 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Use g
         {
           input: {
             prompt: enhancedPrompt,
-            aspect_ratio: "1:1",
+            aspect_ratio: "9:16",
             output_format: "png",
-            output_quality: 90,
+            enable_prompt_rewriting: false,
+            safety_filter_level: "block_medium_and_above",
           }
         }
       ) as string[];
