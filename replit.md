@@ -14,8 +14,8 @@ A web application that transforms lesson JSON files into branded visual social m
 ### Backend (Express)
 - **Routes**: `/server/routes.ts` - API endpoints for lesson-to-slides conversion and image generation
 - **AI Integrations**: 
-  - OpenAI (gpt-5.1) for lesson context analysis and smart prompt generation
-  - Gemini (gemini-2.5-flash-image / nano banana) for branded illustration generation
+  - OpenRouter (gpt-4o-mini via OpenAI API) for lesson context analysis and smart prompt generation
+  - Replicate (flux-schnell) for fast branded illustration generation
 
 ### Shared Types
 - **Schema**: `/shared/schema.ts` - Comprehensive slide types for visual lesson reels

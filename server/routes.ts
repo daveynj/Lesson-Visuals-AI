@@ -1,9 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import OpenAI from "openai";
-import { Modality } from "@google/genai";
-import { gemini } from "./replit_integrations/image/client";
-import { batchProcess } from "./replit_integrations/batch";
+import Replicate from "replicate";
 import type { 
   Lesson, 
   LessonSection,
@@ -21,9 +19,15 @@ import type {
   ExampleSlide,
 } from "@shared/schema";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+// OpenRouter client (OpenAI-compatible API)
+const openrouter = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+// Replicate client for image generation
+const replicate = new Replicate({
+  auth: process.env.REPLICATE_API_KEY,
 });
 
 // Helper to generate unique IDs
@@ -375,13 +379,13 @@ STYLE REQUIREMENTS:
 
 Respond with ONLY the image generation prompt, 2-4 sentences describing the scene in detail.`;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-5.1",
+      const response = await openrouter.chat.completions.create({
+        model: "openai/gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: promptContent },
         ],
-        max_completion_tokens: 200,
+        max_tokens: 200,
       });
 
       const prompt = response.choices[0]?.message?.content || null;
@@ -406,25 +410,29 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
 
 Style: Clean, modern educational illustration with a minimalist aesthetic. Use golden yellow (#edc437) and navy blue (#051d40) as accent colors. Off-white background (#fdfdfd). No text in the image. Square format, high quality, professional illustration for social media educational content.`;
 
-      const response = await gemini.models.generateContent({
-        model: "gemini-2.5-flash-image",
-        contents: [{ role: "user", parts: [{ text: enhancedPrompt }] }],
-        config: {
-          responseModalities: [Modality.TEXT, Modality.IMAGE],
-        },
-      });
+      // Use Replicate's flux-schnell model for fast image generation
+      const output = await replicate.run(
+        "black-forest-labs/flux-schnell",
+        {
+          input: {
+            prompt: enhancedPrompt,
+            aspect_ratio: "1:1",
+            output_format: "png",
+            output_quality: 90,
+          }
+        }
+      ) as string[];
 
-      const candidate = response.candidates?.[0];
-      const imagePart = candidate?.content?.parts?.find(
-        (part: { inlineData?: { data?: string; mimeType?: string } }) => part.inlineData
-      );
-
-      if (!imagePart?.inlineData?.data) {
+      if (!output || output.length === 0) {
         return res.status(500).json({ error: "No image data in response" });
       }
 
-      const mimeType = imagePart.inlineData.mimeType || "image/png";
-      const imageData = `data:${mimeType};base64,${imagePart.inlineData.data}`;
+      // Replicate returns URLs, fetch the image and convert to base64
+      const imageUrl = output[0];
+      const imageResponse = await fetch(imageUrl);
+      const imageBuffer = await imageResponse.arrayBuffer();
+      const base64 = Buffer.from(imageBuffer).toString('base64');
+      const imageData = `data:image/png;base64,${base64}`;
 
       res.json({ imageData, slideId, prompt });
     } catch (error) {
@@ -456,10 +464,10 @@ Vocabulary: ${vocabulary}
 
 Provide only the context summary.`;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-5.1",
+      const response = await openrouter.chat.completions.create({
+        model: "openai/gpt-4o-mini",
         messages: [{ role: "user", content: contextPrompt }],
-        max_completion_tokens: 200,
+        max_tokens: 200,
       });
 
       const context = response.choices[0]?.message?.content || 
