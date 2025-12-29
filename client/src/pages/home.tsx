@@ -545,60 +545,60 @@ export default function Home() {
       case "title":
         return `
           <div style="text-align: center;">
-            <h2 style="font-size: 56px; font-weight: bold; color: ${textColor}; margin-bottom: 16px;">${slide.title}</h2>
-            ${slide.subtitle ? `<p style="font-size: 28px; opacity: 0.8; color: ${textColor};">${slide.subtitle}</p>` : ""}
-            <div style="display: flex; justify-content: center; gap: 16px; margin-top: 24px;">
-              <span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 8px 20px; border-radius: 4px; font-size: 24px;">${slide.level}</span>
-              <span style="border: 2px solid ${textColor}; color: ${textColor}; padding: 8px 20px; border-radius: 4px; font-size: 24px;">${slide.topic}</span>
+            <h2 style="font-size: 84px; font-weight: bold; color: ${textColor}; margin-bottom: 24px;">${slide.title}</h2>
+            ${slide.subtitle ? `<p style="font-size: 42px; opacity: 0.8; color: ${textColor};">${slide.subtitle}</p>` : ""}
+            <div style="display: flex; justify-content: center; gap: 24px; margin-top: 36px;">
+              <span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 12px 30px; border-radius: 6px; font-size: 36px;">${slide.level}</span>
+              <span style="border: 3px solid ${textColor}; color: ${textColor}; padding: 12px 30px; border-radius: 6px; font-size: 36px;">${slide.topic}</span>
             </div>
           </div>
         `;
       case "vocabulary":
         return `
           <div style="text-align: center;">
-            <h3 style="font-size: 64px; font-weight: bold; color: ${accentColor}; margin-bottom: 16px;">${slide.term}</h3>
-            <p style="font-size: 24px; font-style: italic; opacity: 0.7; color: ${textColor};">${slide.partOfSpeech}</p>
-            <p style="font-size: 32px; font-weight: 500; color: ${textColor}; margin-top: 24px;">${slide.definition}</p>
-            <p style="font-size: 28px; font-style: italic; opacity: 0.8; color: ${textColor}; margin-top: 16px;">"${slide.example}"</p>
+            <h3 style="font-size: 96px; font-weight: bold; color: ${accentColor}; margin-bottom: 24px;">${slide.term}</h3>
+            <p style="font-size: 36px; font-style: italic; opacity: 0.7; color: ${textColor};">${slide.partOfSpeech}</p>
+            <p style="font-size: 48px; font-weight: 500; color: ${textColor}; margin-top: 36px;">${slide.definition}</p>
+            <p style="font-size: 42px; font-style: italic; opacity: 0.8; color: ${textColor}; margin-top: 24px;">"${slide.example}"</p>
           </div>
         `;
       case "grammar":
         return `
           <div>
-            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 24px;">${slide.title}</h3>
-            <p style="font-size: 32px; color: ${textColor}; line-height: 1.5;">${slide.explanation}</p>
-            ${slide.examples?.[0] ? `<div style="margin-top: 32px; padding: 24px; background-color: ${accentColor}20; border-radius: 8px;"><p style="font-size: 28px; font-style: italic; color: ${textColor};">${slide.examples[0]}</p></div>` : ""}
+            <h3 style="font-size: 72px; font-weight: 600; color: ${textColor}; margin-bottom: 36px;">${slide.title}</h3>
+            <p style="font-size: 48px; color: ${textColor}; line-height: 1.5;">${slide.explanation}</p>
+            ${slide.examples?.[0] ? `<div style="margin-top: 48px; padding: 36px; background-color: ${accentColor}20; border-radius: 12px;"><p style="font-size: 42px; font-style: italic; color: ${textColor};">${slide.examples[0]}</p></div>` : ""}
           </div>
         `;
       case "reading":
         return `
           <div>
-            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 24px;">${slide.title}</h3>
-            <p style="font-size: 28px; color: ${textColor}; line-height: 1.6;">${slide.content}</p>
+            <h3 style="font-size: 72px; font-weight: 600; color: ${textColor}; margin-bottom: 36px;">${slide.title}</h3>
+            <p style="font-size: 42px; color: ${textColor}; line-height: 1.6;">${slide.content}</p>
           </div>
         `;
       case "example":
         return `
           <div>
-            <h3 style="font-size: 48px; font-weight: 600; color: ${accentColor}; margin-bottom: 24px;">${slide.context}</h3>
-            <p style="font-size: 32px; color: ${textColor}; line-height: 1.5;">${slide.sentence}</p>
-            ${slide.highlight ? `<span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 8px 20px; border-radius: 4px; font-size: 24px; margin-top: 24px; display: inline-block;">${slide.highlight}</span>` : ""}
+            <h3 style="font-size: 72px; font-weight: 600; color: ${accentColor}; margin-bottom: 36px;">${slide.context}</h3>
+            <p style="font-size: 48px; color: ${textColor}; line-height: 1.5;">${slide.sentence}</p>
+            ${slide.highlight ? `<span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 12px 30px; border-radius: 6px; font-size: 36px; margin-top: 36px; display: inline-block;">${slide.highlight}</span>` : ""}
           </div>
         `;
       case "activity":
         return `
           <div>
-            <h3 style="font-size: 48px; font-weight: 600; color: ${accentColor}; margin-bottom: 24px;">${slide.title}</h3>
-            <p style="font-size: 28px; color: ${textColor}; line-height: 1.5;">${slide.instructions}</p>
-            ${slide.targetVocabulary?.length ? `<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px;">${slide.targetVocabulary.map(word => `<span style="border: 2px solid ${accentColor}; color: ${textColor}; padding: 8px 16px; border-radius: 4px; font-size: 20px;">${word}</span>`).join("")}</div>` : ""}
+            <h3 style="font-size: 72px; font-weight: 600; color: ${accentColor}; margin-bottom: 36px;">${slide.title}</h3>
+            <p style="font-size: 42px; color: ${textColor}; line-height: 1.5;">${slide.instructions}</p>
+            ${slide.targetVocabulary?.length ? `<div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 48px;">${slide.targetVocabulary.map(word => `<span style="border: 3px solid ${accentColor}; color: ${textColor}; padding: 12px 24px; border-radius: 6px; font-size: 30px;">${word}</span>`).join("")}</div>` : ""}
           </div>
         `;
       case "objectives":
         return `
           <div style="text-align: center;">
-            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 32px;">${slide.title}</h3>
+            <h3 style="font-size: 72px; font-weight: 600; color: ${textColor}; margin-bottom: 48px;">${slide.title}</h3>
             <ul style="list-style: none; padding: 0;">
-              ${slide.objectives.map(obj => `<li style="font-size: 28px; color: ${textColor}; margin-bottom: 20px; display: flex; align-items: start; gap: 16px;"><span style="color: ${accentColor}; font-size: 32px;">•</span><span>${obj}</span></li>`).join("")}
+              ${slide.objectives.map(obj => `<li style="font-size: 42px; color: ${textColor}; margin-bottom: 30px; display: flex; align-items: start; gap: 24px;"><span style="color: ${accentColor}; font-size: 48px;">•</span><span>${obj}</span></li>`).join("")}
             </ul>
           </div>
         `;
@@ -609,29 +609,29 @@ export default function Home() {
         const opts = slide.options || (typeof slide.question === 'object' ? (slide.question as { options?: string[] }).options : undefined);
         return `
           <div style="text-align: center;">
-            <span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 8px 20px; border-radius: 4px; font-size: 24px;">Question ${slide.questionNumber} of ${slide.totalQuestions}</span>
-            <p style="font-size: 36px; font-weight: 500; color: ${textColor}; margin-top: 40px;">${questionText}</p>
-            ${opts ? `<div style="margin-top: 40px;">${opts.map((opt, i) => `<div style="background-color: ${accentColor}20; padding: 20px; border-radius: 8px; margin-bottom: 16px; font-size: 28px; color: ${textColor};">${String.fromCharCode(65 + i)}. ${opt}</div>`).join("")}</div>` : ""}
+            <span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 12px 30px; border-radius: 6px; font-size: 36px;">Question ${slide.questionNumber} of ${slide.totalQuestions}</span>
+            <p style="font-size: 54px; font-weight: 500; color: ${textColor}; margin-top: 60px;">${questionText}</p>
+            ${opts ? `<div style="margin-top: 60px;">${opts.map((opt, i) => `<div style="background-color: ${accentColor}20; padding: 30px; border-radius: 12px; margin-bottom: 24px; font-size: 42px; color: ${textColor};">${String.fromCharCode(65 + i)}. ${opt}</div>`).join("")}</div>` : ""}
           </div>
         `;
       case "summary":
         return `
           <div style="text-align: center;">
-            <h3 style="font-size: 48px; font-weight: 600; color: ${textColor}; margin-bottom: 32px;">${slide.title}</h3>
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
-              ${slide.keyPoints.map(point => `<span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 12px 24px; border-radius: 4px; font-size: 24px;">${point}</span>`).join("")}
+            <h3 style="font-size: 72px; font-weight: 600; color: ${textColor}; margin-bottom: 48px;">${slide.title}</h3>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 24px;">
+              ${slide.keyPoints.map(point => `<span style="background-color: ${accentColor}; color: ${BRAND_COLORS.secondary}; padding: 18px 36px; border-radius: 6px; font-size: 36px;">${point}</span>`).join("")}
             </div>
           </div>
         `;
       case "outro":
         return `
           <div style="text-align: center;">
-            <h3 style="font-size: 56px; font-weight: bold; color: ${accentColor}; margin-bottom: 24px;">${slide.message}</h3>
-            ${slide.callToAction ? `<p style="font-size: 32px; color: ${textColor};">${slide.callToAction}</p>` : ""}
+            <h3 style="font-size: 84px; font-weight: bold; color: ${accentColor}; margin-bottom: 36px;">${slide.message}</h3>
+            ${slide.callToAction ? `<p style="font-size: 48px; color: ${textColor};">${slide.callToAction}</p>` : ""}
           </div>
         `;
       default:
-        return `<p style="font-size: 28px; color: ${textColor};">Slide content</p>`;
+        return `<p style="font-size: 42px; color: ${textColor};">Slide content</p>`;
     }
   };
 
