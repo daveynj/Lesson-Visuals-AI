@@ -401,7 +401,7 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
     }
   });
 
-  // Generate image for a slide
+  // Generate image for a slide with retry logic for rate limits
   app.post("/api/generate-slide-image", async (req, res) => {
     try {
       const { prompt, slideId } = req.body as { prompt: string; slideId: string };
@@ -414,54 +414,79 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
 
 Style: Clean, modern educational illustration with a minimalist aesthetic. Warm golden yellow and deep navy blue as accent colors. Light off-white background. No text, no words, no letters in the image. Vertical format, high quality, professional illustration for social media educational content.`;
 
-      // Use Replicate's google/imagen-4-fast model for fast image generation
-      // Use predictions API to avoid streaming issues
-      const prediction = await replicate.predictions.create({
-        model: "google/imagen-4-fast",
-        input: {
-          prompt: enhancedPrompt,
-          aspect_ratio: "9:16",
-          output_format: "png",
-          enable_prompt_rewriting: false,
-          safety_filter_level: "block_medium_and_above",
+      // Retry logic for rate limiting (429 errors)
+      const maxRetries = 5;
+      let lastError: any;
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          // Wait before retrying (exponential backoff starting at 10s)
+          if (attempt > 0) {
+            const delay = Math.min(10000 * Math.pow(1.5, attempt), 30000);
+            console.log(`Retry attempt ${attempt + 1}/${maxRetries}, waiting ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+
+          // Use Replicate's google/imagen-4-fast model for fast image generation
+          const prediction = await replicate.predictions.create({
+            model: "google/imagen-4-fast",
+            input: {
+              prompt: enhancedPrompt,
+              aspect_ratio: "9:16",
+              output_format: "png",
+              enable_prompt_rewriting: false,
+              safety_filter_level: "block_medium_and_above",
+            }
+          });
+
+          // Wait for the prediction to complete
+          let completedPrediction = await replicate.predictions.get(prediction.id);
+          while (completedPrediction.status !== "succeeded" && completedPrediction.status !== "failed") {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            completedPrediction = await replicate.predictions.get(prediction.id);
+          }
+
+          if (completedPrediction.status === "failed") {
+            console.error("Prediction failed:", completedPrediction.error);
+            return res.status(500).json({ error: "Image generation failed" });
+          }
+
+          const output = completedPrediction.output;
+          console.log("Replicate output:", JSON.stringify(output, null, 2));
+
+          // Handle different output formats from Replicate
+          let imageUrl: string;
+          if (typeof output === 'string') {
+            imageUrl = output;
+          } else if (Array.isArray(output) && output.length > 0) {
+            imageUrl = output[0];
+          } else {
+            console.error("Unexpected output format:", output);
+            return res.status(500).json({ error: "Unexpected image output format" });
+          }
+
+          // Fetch the image and convert to base64
+          const imageResponse = await fetch(imageUrl);
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const base64 = Buffer.from(imageBuffer).toString('base64');
+          const imageData = `data:image/png;base64,${base64}`;
+
+          return res.json({ imageData, slideId, prompt });
+        } catch (error: any) {
+          lastError = error;
+          // Check if it's a rate limit error (429)
+          if (error?.response?.status === 429 || error?.message?.includes('429')) {
+            console.log(`Rate limited, will retry... (attempt ${attempt + 1}/${maxRetries})`);
+            continue;
+          }
+          // For other errors, don't retry
+          throw error;
         }
-      });
-
-      // Wait for the prediction to complete
-      let completedPrediction = await replicate.predictions.get(prediction.id);
-      while (completedPrediction.status !== "succeeded" && completedPrediction.status !== "failed") {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        completedPrediction = await replicate.predictions.get(prediction.id);
       }
 
-      if (completedPrediction.status === "failed") {
-        console.error("Prediction failed:", completedPrediction.error);
-        return res.status(500).json({ error: "Image generation failed" });
-      }
-
-      const output = completedPrediction.output;
-      console.log("Replicate output:", JSON.stringify(output, null, 2));
-
-      // Handle different output formats from Replicate
-      let imageUrl: string;
-      if (typeof output === 'string') {
-        // Direct URL string
-        imageUrl = output;
-      } else if (Array.isArray(output) && output.length > 0) {
-        // Array of URLs
-        imageUrl = output[0];
-      } else {
-        console.error("Unexpected output format:", output);
-        return res.status(500).json({ error: "Unexpected image output format" });
-      }
-
-      // Fetch the image and convert to base64
-      const imageResponse = await fetch(imageUrl);
-      const imageBuffer = await imageResponse.arrayBuffer();
-      const base64 = Buffer.from(imageBuffer).toString('base64');
-      const imageData = `data:image/png;base64,${base64}`;
-
-      res.json({ imageData, slideId, prompt });
+      // All retries exhausted
+      console.error("All retries exhausted for image generation:", lastError);
+      res.status(500).json({ error: "Failed to generate image after retries" });
     } catch (error) {
       console.error("Error generating slide image:", error);
       res.status(500).json({ error: "Failed to generate image" });
