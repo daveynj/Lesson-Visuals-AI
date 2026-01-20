@@ -883,17 +883,68 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    onClick={generateImages}
-                    size="lg"
-                    className="gap-2"
-                    style={{ backgroundColor: BRAND_COLORS.primary, color: BRAND_COLORS.secondary }}
-                    data-testid="button-generate-reel"
-                  >
-                    <Wand2 className="w-4 h-4" />
-                    Generate Visual Reel
-                  </Button>
+
+                {/* Generation Settings */}
+                <div className="mt-6 space-y-4">
+                  <h4 className="text-sm font-medium text-center">Generation Settings</h4>
+                  <div className="flex flex-wrap gap-3 justify-center items-center">
+                    {/* Format Selector */}
+                    <Select value={outputFormat} onValueChange={(v: "story" | "thumbnail" | "square") => setOutputFormat(v)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="story">9:16 Story</SelectItem>
+                        <SelectItem value="thumbnail">16:9 Thumbnail</SelectItem>
+                        <SelectItem value="square">1:1 Square</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Tone Selector */}
+                    <Select value={scriptTone} onValueChange={(v: "professional" | "casual" | "fun") => setScriptTone(v)}>
+                      <SelectTrigger className="w-[130px]">
+                        <SelectValue placeholder="Tone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="casual">Casual</SelectItem>
+                        <SelectItem value="fun">Fun</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Brand Settings Toggle */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowBrandSettings(!showBrandSettings)}
+                      title="Brand Settings"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Brand Settings Panel */}
+                  {showBrandSettings && (
+                    <div className="border rounded-lg p-4">
+                      <BrandSettingsPanel
+                        settings={brandSettings}
+                        onSettingsChange={updateBrandSettings}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={generateImages}
+                      size="lg"
+                      className="gap-2"
+                      style={{ backgroundColor: BRAND_COLORS.primary, color: BRAND_COLORS.secondary }}
+                      data-testid="button-generate-reel"
+                    >
+                      <Wand2 className="w-4 h-4" />
+                      Generate Visual Reel
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
