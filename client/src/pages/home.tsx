@@ -276,7 +276,11 @@ export default function Home() {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentGenerating, setCurrentGenerating] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const [outputFormat, setOutputFormat] = useState<"story" | "thumbnail" | "square">("story");
+  const [scriptTone, setScriptTone] = useState<"professional" | "casual" | "fun">("professional");
+  const [showBrandSettings, setShowBrandSettings] = useState(false);
   const { toast } = useToast();
+  const { settings: brandSettings, updateSettings: updateBrandSettings } = useBrandSettings();
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.name.endsWith(".json")) {
@@ -905,7 +909,41 @@ export default function Home() {
                     {reel.slides.filter(s => s.imageData).length} visual slides generated
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
+                  {/* Format Selector */}
+                  <Select value={outputFormat} onValueChange={(v: "story" | "thumbnail" | "square") => setOutputFormat(v)}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="story">9:16 Story</SelectItem>
+                      <SelectItem value="thumbnail">16:9 Thumbnail</SelectItem>
+                      <SelectItem value="square">1:1 Square</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Tone Selector */}
+                  <Select value={scriptTone} onValueChange={(v: "professional" | "casual" | "fun") => setScriptTone(v)}>
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue placeholder="Tone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="professional">Professional</SelectItem>
+                      <SelectItem value="casual">Casual</SelectItem>
+                      <SelectItem value="fun">Fun</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Brand Settings Toggle */}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowBrandSettings(!showBrandSettings)}
+                    title="Brand Settings"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Button>
+
                   <Button
                     onClick={downloadAll}
                     className="gap-2"
@@ -915,20 +953,50 @@ export default function Home() {
                     <Download className="w-4 h-4" />
                     Download All
                   </Button>
+
+                  {/* ZIP Bundle Download */}
+                  <Button
+                    onClick={async () => {
+                      if (!reel || !lesson) return;
+                      toast({
+                        title: "Creating ZIP bundle...",
+                        description: "Packaging slides, script, and subtitles",
+                      });
+                      try {
+                        await downloadLessonBundle(reel, lesson, scriptTone);
+                        toast({
+                          title: "Bundle downloaded!",
+                          description: "ZIP file with all assets ready",
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Bundle creation failed",
+                          description: "Please try again",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    variant="outline"
+                    className="gap-2"
+                    data-testid="button-download-zip"
+                  >
+                    <Archive className="w-4 h-4" />
+                    ZIP Bundle
+                  </Button>
+
                   <Button
                     onClick={async () => {
                       if (!reel) return;
                       toast({
                         title: "Generating script...",
-                        description: "Creating voiceover script and subtitles",
+                        description: `Creating ${scriptTone} voiceover script`,
                       });
                       try {
                         const response = await apiRequest("POST", "/api/generate-script", {
                           reel,
-                          tone: "professional",
+                          tone: scriptTone,
                         });
                         const data = await response.json();
-                        // Download script.txt
                         const blob = new Blob([data.scriptText], { type: "text/plain" });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
@@ -936,7 +1004,6 @@ export default function Home() {
                         a.download = "script.txt";
                         a.click();
                         URL.revokeObjectURL(url);
-                        // Download SRT
                         const srtBlob = new Blob([data.srtContent], { type: "text/plain" });
                         const srtUrl = URL.createObjectURL(srtBlob);
                         const srtA = document.createElement("a");
@@ -961,10 +1028,20 @@ export default function Home() {
                     data-testid="button-generate-script"
                   >
                     <FileText className="w-4 h-4" />
-                    Get Script + Subtitles
+                    Script + SRT
                   </Button>
                 </div>
               </CardHeader>
+
+              {/* Brand Settings Panel */}
+              {showBrandSettings && (
+                <div className="px-6 pb-4">
+                  <BrandSettingsPanel
+                    settings={brandSettings}
+                    onChange={updateBrandSettings}
+                  />
+                </div>
+              )}
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
                   <ScrollArea className="h-[500px] rounded-md border p-2">
