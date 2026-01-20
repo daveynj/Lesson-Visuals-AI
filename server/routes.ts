@@ -331,9 +331,10 @@ export async function registerRoutes(
   // Generate image prompt for a slide
   app.post("/api/generate-slide-prompt", async (req, res) => {
     try {
-      const { slide, lessonContext } = req.body as {
+      const { slide, lessonContext, aspectRatio = "9:16" } = req.body as {
         slide: Slide;
         lessonContext: string;
+        aspectRatio?: string;
       };
 
       if (!slide) {
@@ -406,7 +407,7 @@ STYLE REQUIREMENTS:
 - Consistent visual language
 - Educational but visually engaging
 - No text in the image (text overlaid separately)
-- Square aspect ratio (1:1) for social media
+- ${aspectRatio === "16:9" ? "Wide landscape composition (16:9)" : aspectRatio === "1:1" ? "Square composition (1:1)" : "Vertical story composition (9:16)"}
 - Bright, clear imagery with good contrast
 - Professional quality suitable for Instagram/TikTok
 
@@ -433,7 +434,11 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
   // Generate image for a slide with retry logic for rate limits
   app.post("/api/generate-slide-image", async (req, res) => {
     try {
-      const { prompt, slideId } = req.body as { prompt: string; slideId: string };
+      const { prompt, slideId, aspectRatio = "9:16" } = req.body as {
+        prompt: string;
+        slideId: string;
+        aspectRatio?: "9:16" | "16:9" | "1:1";
+      };
 
       if (!prompt) {
         return res.status(400).json({ error: "Prompt is required" });
@@ -441,7 +446,7 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
 
       const enhancedPrompt = `${prompt}
 
-Style: Clean, modern educational illustration with a minimalist aesthetic. Warm golden yellow and deep navy blue as accent colors. Light off-white background. No text, no words, no letters in the image. Vertical format, high quality, professional illustration for social media educational content.`;
+Style: Clean, modern educational illustration with a minimalist aesthetic. Warm golden yellow and deep navy blue as accent colors. Light off-white background. No text, no words, no letters in the image. ${aspectRatio === "16:9" ? "Wide landscape" : aspectRatio === "1:1" ? "Square" : "Vertical"} format, professional illustration for social media.`;
 
       // Retry logic for rate limiting (429 errors)
       const maxRetries = 5;
@@ -461,7 +466,7 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
             model: "google/imagen-4-fast",
             input: {
               prompt: enhancedPrompt,
-              aspect_ratio: "9:16",
+              aspect_ratio: aspectRatio,
               output_format: "png",
               enable_prompt_rewriting: false,
               safety_filter_level: "block_medium_and_above",
@@ -603,6 +608,7 @@ Respond with ONLY a JSON object in this exact format:
   });
 
   // Generate lesson context
+  // Generate lesson context
   app.post("/api/generate-lesson-context", async (req, res) => {
     try {
       const { lesson } = req.body as { lesson: Lesson };
@@ -611,28 +617,44 @@ Respond with ONLY a JSON object in this exact format:
         return res.status(400).json({ error: "Lesson data is required" });
       }
 
+      // Extract fuller content for context
       const vocabulary = lesson.content.sections
         .flatMap(s => s.words || [])
-        .map(w => `${w.term}: ${w.definition}`)
+        .map(w => w.term)
+        .join(", ");
+
+      const grammar = lesson.content.sections
+        .filter(s => s.type === "grammar_explanation")
+        .map(s => s.title)
         .join("; ");
 
-      const contextPrompt = `Analyze this ESL lesson and provide a brief context summary (2-3 sentences) for generating educational illustrations.
+      const readingThemes = lesson.content.sections
+        .filter(s => s.type === "reading_text")
+        .map(s => s.title)
+        .join("; ");
 
-Lesson: ${lesson.title}
+      const contextPrompt = `Analyze this ESL lesson to define a consistent visual style for image generation.
+      
+Lesson Title: ${lesson.title}
 Topic: ${lesson.topic}
 Level: ${lesson.cefrLevel}
-Vocabulary: ${vocabulary}
+Key Vocabulary: ${vocabulary}
+Grammar Points: ${grammar}
+Reading Themes: ${readingThemes}
 
-Provide only the context summary.`;
+Please provide a "Visual Context Description" (3-4 sentences) that describes:
+1. The setting or environment (e.g., "a modern corporate office," "a bustling coffee shop," "abstract geometric shapes").
+2. The mood and color palette suggestions (e.g., "warm and inviting," "cool and professional").
+3. Returns ONLY the description paragraph, no labels.`;
 
       const response = await openrouter.chat.completions.create({
         model: "openai/gpt-4o-mini",
         messages: [{ role: "user", content: contextPrompt }],
-        max_tokens: 200,
+        max_tokens: 250,
       });
 
       const context = response.choices[0]?.message?.content ||
-        `ESL lesson about ${lesson.topic} for ${lesson.cefrLevel} learners.`;
+        `Educational illustrations for a ${lesson.cefrLevel} ESL lesson about ${lesson.topic}. Style: Modern, clean, and engaging.`;
 
       res.json({ context });
     } catch (error) {

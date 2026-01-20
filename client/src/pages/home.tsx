@@ -418,6 +418,7 @@ export default function Home() {
         const promptResponse = await apiRequest("POST", "/api/generate-slide-prompt", {
           slide: genSlide.slide,
           lessonContext,
+          aspectRatio: outputFormat,
         });
         const promptData = await promptResponse.json() as { prompt: string | null; slideId: string };
 
@@ -426,6 +427,7 @@ export default function Home() {
           const imageResponse = await apiRequest("POST", "/api/generate-slide-image", {
             prompt: promptData.prompt,
             slideId: genSlide.slide.id,
+            aspectRatio: outputFormat,
           });
           const imageData = await imageResponse.json() as { imageData: string; slideId: string; prompt: string };
 
