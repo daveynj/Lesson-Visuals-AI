@@ -959,18 +959,32 @@ export default function Home() {
                   {/* ZIP Bundle Download */}
                   <Button
                     onClick={async () => {
-                      if (!reel || !lesson) return;
+                      if (!reel) return;
                       toast({
                         title: "Creating ZIP bundle...",
-                        description: "Packaging slides, script, and subtitles",
+                        description: "Generating script and packaging assets...",
                       });
                       try {
-                        await downloadLessonBundle(reel, lesson, scriptTone);
+                        // First, generate the script
+                        const scriptResponse = await apiRequest("POST", "/api/generate-script", {
+                          reel,
+                          tone: scriptTone,
+                        });
+                        const scriptData = await scriptResponse.json();
+
+                        // Now create the ZIP bundle with script content
+                        await downloadLessonBundle(
+                          reel,
+                          scriptData.script,      // VoiceoverScript object
+                          scriptData.scriptText,  // Plain text script
+                          scriptData.srtContent   // SRT subtitles
+                        );
                         toast({
                           title: "Bundle downloaded!",
-                          description: "ZIP file with all assets ready",
+                          description: "ZIP file with slides, script, and subtitles ready",
                         });
                       } catch (error) {
+                        console.error("ZIP bundle error:", error);
                         toast({
                           title: "Bundle creation failed",
                           description: "Please try again",
