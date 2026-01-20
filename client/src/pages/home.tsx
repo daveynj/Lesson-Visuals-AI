@@ -430,6 +430,14 @@ export default function Home() {
     setStep("generating");
     setGenerationProgress(0);
 
+    // Map outputFormat to actual aspect ratios
+    const aspectRatioMap: Record<string, "9:16" | "16:9" | "1:1"> = {
+      story: "9:16",
+      thumbnail: "16:9",
+      square: "1:1",
+    };
+    const aspectRatio = aspectRatioMap[outputFormat] || "9:16";
+
     const slidesRequiringImages = reel.slides.filter(s => s.slide.requiresImage);
     const updatedSlides = [...reel.slides];
     let completed = 0;
@@ -444,7 +452,7 @@ export default function Home() {
         const promptResponse = await apiRequest("POST", "/api/generate-slide-prompt", {
           slide: genSlide.slide,
           lessonContext,
-          aspectRatio: outputFormat,
+          aspectRatio,
         });
         const promptData = await promptResponse.json() as { prompt: string | null; slideId: string };
 
@@ -453,7 +461,7 @@ export default function Home() {
           const imageResponse = await apiRequest("POST", "/api/generate-slide-image", {
             prompt: promptData.prompt,
             slideId: genSlide.slide.id,
-            aspectRatio: outputFormat,
+            aspectRatio,
           });
           const imageData = await imageResponse.json() as { imageData: string; slideId: string; prompt: string };
 
