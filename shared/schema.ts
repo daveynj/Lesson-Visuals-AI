@@ -118,8 +118,9 @@ export const smartPromptResultSchema = z.object({
 export type SmartPromptResult = z.infer<typeof smartPromptResultSchema>;
 
 // Slide types for visual lesson reel
-export type SlideType = 
+export type SlideType =
   | "title"           // Opening slide with lesson title
+  | "hook"            // Attention-grabbing opening question/statement
   | "objectives"      // Learning objectives
   | "vocabulary"      // Individual vocab word with illustration
   | "grammar"         // Grammar/concept explanation with illustration
@@ -127,13 +128,14 @@ export type SlideType =
   | "reading"         // Reading passage content
   | "activity"        // Interactive activity instructions
   | "quiz"            // Quiz question (text-only, branded)
+  | "answer"          // Quiz answer reveal
   | "summary"         // Key takeaways
   | "outro";          // Closing slide
 
 // Base slide blueprint
 export const slideBaseSchema = z.object({
   id: z.string(),
-  type: z.enum(["title", "objectives", "vocabulary", "grammar", "example", "reading", "activity", "quiz", "summary", "outro"]),
+  type: z.enum(["title", "hook", "objectives", "vocabulary", "grammar", "example", "reading", "activity", "quiz", "answer", "summary", "outro"]),
   sequence: z.number(),
   requiresImage: z.boolean(),
 });
@@ -145,6 +147,13 @@ export const titleSlideSchema = slideBaseSchema.extend({
   subtitle: z.string().optional(),
   level: z.string(),
   topic: z.string(),
+});
+
+// Hook slide - attention grabbing opening
+export const hookSlideSchema = slideBaseSchema.extend({
+  type: z.literal("hook"),
+  hookText: z.string(),
+  hookType: z.enum(["question", "fact", "challenge", "teaser"]).optional(),
 });
 
 // Objectives slide  
@@ -210,6 +219,14 @@ export const quizSlideSchema = slideBaseSchema.extend({
   answer: z.string().optional(),
 });
 
+// Answer reveal slide
+export const answerSlideSchema = slideBaseSchema.extend({
+  type: z.literal("answer"),
+  questionNumber: z.number(),
+  correctAnswer: z.string(),
+  explanation: z.string().optional(),
+});
+
 // Summary slide
 export const summarySlideSchema = slideBaseSchema.extend({
   type: z.literal("summary"),
@@ -227,6 +244,7 @@ export const outroSlideSchema = slideBaseSchema.extend({
 // Union of all slide types
 export const slideSchema = z.discriminatedUnion("type", [
   titleSlideSchema,
+  hookSlideSchema,
   objectivesSlideSchema,
   vocabularySlideSchema,
   grammarSlideSchema,
@@ -234,12 +252,14 @@ export const slideSchema = z.discriminatedUnion("type", [
   readingSlideSchema,
   activitySlideSchema,
   quizSlideSchema,
+  answerSlideSchema,
   summarySlideSchema,
   outroSlideSchema,
 ]);
 
 export type Slide = z.infer<typeof slideSchema>;
 export type TitleSlide = z.infer<typeof titleSlideSchema>;
+export type HookSlide = z.infer<typeof hookSlideSchema>;
 export type ObjectivesSlide = z.infer<typeof objectivesSlideSchema>;
 export type VocabularySlide = z.infer<typeof vocabularySlideSchema>;
 export type GrammarSlide = z.infer<typeof grammarSlideSchema>;
@@ -247,6 +267,7 @@ export type ExampleSlide = z.infer<typeof exampleSlideSchema>;
 export type ReadingSlide = z.infer<typeof readingSlideSchema>;
 export type ActivitySlide = z.infer<typeof activitySlideSchema>;
 export type QuizSlide = z.infer<typeof quizSlideSchema>;
+export type AnswerSlide = z.infer<typeof answerSlideSchema>;
 export type SummarySlide = z.infer<typeof summarySlideSchema>;
 export type OutroSlide = z.infer<typeof outroSlideSchema>;
 
@@ -270,6 +291,18 @@ export const lessonReelSchema = z.object({
 });
 
 export type LessonReel = z.infer<typeof lessonReelSchema>;
+
+// Output format for different social media platforms
+export type OutputFormat = "story" | "thumbnail" | "square";
+
+export const outputFormatConfig: Record<OutputFormat, { aspectRatio: string; width: number; height: number; label: string }> = {
+  story: { aspectRatio: "9:16", width: 1080, height: 1920, label: "Story/Reel (9:16)" },
+  thumbnail: { aspectRatio: "16:9", width: 1920, height: 1080, label: "Thumbnail (16:9)" },
+  square: { aspectRatio: "1:1", width: 1080, height: 1080, label: "Square (1:1)" },
+};
+
+// Script tone for voiceover generation
+export type ScriptTone = "professional" | "casual" | "fun";
 
 // User schema for compatibility
 export const users = {

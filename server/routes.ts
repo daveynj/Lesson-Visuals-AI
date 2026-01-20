@@ -2,21 +2,24 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import OpenAI from "openai";
 import Replicate from "replicate";
-import type { 
-  Lesson, 
+import type {
+  Lesson,
   LessonSection,
-  Slide, 
+  LessonReel,
+  Slide,
   GeneratedSlide,
   VocabularySlide,
   GrammarSlide,
   QuizSlide,
   TitleSlide,
+  HookSlide,
   ObjectivesSlide,
   SummarySlide,
   OutroSlide,
   ReadingSlide,
   ActivitySlide,
   ExampleSlide,
+  AnswerSlide,
 } from "@shared/schema";
 
 // OpenRouter client (OpenAI-compatible API)
@@ -50,7 +53,7 @@ function classifySection(section: LessonSection): string {
   if (combined.includes("quiz") || combined.includes("assessment") || combined.includes("check") || combined.includes("test")) return "quiz";
   if (combined.includes("summary") || combined.includes("review") || combined.includes("wrap")) return "summary";
   if (combined.includes("introduction") || combined.includes("warm")) return "intro";
-  
+
   // Default: if it has content, treat as reading/content slide
   if (section.content || section.paragraphs) return "content";
   return "other";
@@ -75,18 +78,29 @@ function lessonToSlides(lesson: Lesson): Slide[] {
   };
   slides.push(titleSlide);
 
+  // 2. Hook slide - attention grabbing opening
+  const hookSlide: HookSlide = {
+    id: generateId(),
+    type: "hook",
+    sequence: sequence++,
+    requiresImage: true,
+    hookText: `Ready to master ${lesson.topic}? Let's go! 🚀`,
+    hookType: "teaser",
+  };
+  slides.push(hookSlide);
+
   // 2. Extract objectives from sections
   const objectivesIdx = lesson.content.sections.findIndex(s => classifySection(s) === "objectives");
   if (objectivesIdx !== -1) {
     const section = lesson.content.sections[objectivesIdx];
     processedSections.add(objectivesIdx);
-    
+
     if (section.content) {
       const objectives = section.content
         .split(/[\n•\-]/)
         .map(o => o.trim())
         .filter(o => o.length > 10);
-      
+
       if (objectives.length > 0) {
         const objectivesSlide: ObjectivesSlide = {
           id: generateId(),
@@ -104,7 +118,7 @@ function lessonToSlides(lesson: Lesson): Slide[] {
   // 3. Process each section
   for (let i = 0; i < lesson.content.sections.length; i++) {
     if (processedSections.has(i)) continue;
-    
+
     const section = lesson.content.sections[i];
     const category = classifySection(section);
 
@@ -182,19 +196,22 @@ function lessonToSlides(lesson: Lesson): Slide[] {
 
       case "quiz":
         if (section.questions) {
-          section.questions.slice(0, 5).forEach((questionData, idx) => {
+          section.questions.slice(0, 5).forEach((questionData: unknown, idx: number) => {
             // Handle both string and object question formats
             let questionText: string;
             let questionOptions: string[] | undefined;
-            
+            let correctAnswer: string | undefined;
+
             if (typeof questionData === 'object' && questionData !== null) {
-              const qObj = questionData as { question?: string; options?: string[] };
+              const qObj = questionData as { question?: string; options?: string[]; answer?: string };
               questionText = qObj.question || JSON.stringify(questionData);
               questionOptions = qObj.options;
+              correctAnswer = qObj.answer;
             } else {
               questionText = String(questionData);
             }
-            
+
+            // Quiz question slide
             const quizSlide: QuizSlide = {
               id: generateId(),
               type: "quiz",
@@ -206,6 +223,18 @@ function lessonToSlides(lesson: Lesson): Slide[] {
               options: questionOptions,
             };
             slides.push(quizSlide);
+
+            // Answer reveal slide (follows each question)
+            const answerSlide: AnswerSlide = {
+              id: generateId(),
+              type: "answer",
+              sequence: sequence++,
+              requiresImage: false,
+              questionNumber: idx + 1,
+              correctAnswer: correctAnswer || "See the correct answer!",
+              explanation: `Great job thinking about this question!`,
+            };
+            slides.push(answerSlide);
           });
         }
         break;
@@ -238,7 +267,7 @@ function lessonToSlides(lesson: Lesson): Slide[] {
   const vocabularyTerms = slides
     .filter((s): s is VocabularySlide => s.type === "vocabulary")
     .map(s => s.term);
-  
+
   if (vocabularyTerms.length > 0) {
     const summarySlide: SummarySlide = {
       id: generateId(),
@@ -269,12 +298,12 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
   // Convert lesson to slide blueprints
   app.post("/api/lesson-to-slides", async (req, res) => {
     try {
       const { lesson } = req.body as { lesson: Lesson };
-      
+
       if (!lesson) {
         return res.status(400).json({ error: "Lesson data is required" });
       }
@@ -302,8 +331,8 @@ export async function registerRoutes(
   // Generate image prompt for a slide
   app.post("/api/generate-slide-prompt", async (req, res) => {
     try {
-      const { slide, lessonContext } = req.body as { 
-        slide: Slide; 
+      const { slide, lessonContext } = req.body as {
+        slide: Slide;
         lessonContext: string;
       };
 
@@ -312,7 +341,7 @@ export async function registerRoutes(
       }
 
       let promptContent = "";
-      
+
       switch (slide.type) {
         case "title":
           promptContent = `Create an image prompt for a lesson title slide:
@@ -321,7 +350,7 @@ Topic: ${slide.topic}
 Level: ${slide.level}
 The image should be a hero illustration that captures the essence of the lesson topic, inviting and educational.`;
           break;
-          
+
         case "vocabulary":
           promptContent = `Create an image prompt for a vocabulary flashcard:
 Word: "${slide.term}"
@@ -330,7 +359,7 @@ Definition: ${slide.definition}
 Example: "${slide.example}"
 Create a visual that clearly represents the word's meaning in an educational context.`;
           break;
-          
+
         case "grammar":
           promptContent = `Create an image prompt for a grammar/concept explanation:
 Topic: "${slide.title}"
@@ -352,13 +381,13 @@ Content: "${slide.sentence.substring(0, 150)}"
 ${slide.highlight ? `Key word to highlight: "${slide.highlight}"` : ""}
 Create an illustration showing this scenario or dialogue situation in action.`;
           break;
-          
+
         case "outro":
           promptContent = `Create an image prompt for a lesson outro/completion slide:
 Message: "${slide.message}"
 Create a celebratory, encouraging illustration for completing the lesson.`;
           break;
-          
+
         default:
           return res.json({ prompt: null, requiresImage: false });
       }
@@ -393,7 +422,7 @@ Respond with ONLY the image generation prompt, 2-4 sentences describing the scen
       });
 
       const prompt = response.choices[0]?.message?.content || null;
-      
+
       res.json({ prompt, slideId: slide.id });
     } catch (error) {
       console.error("Error generating slide prompt:", error);
@@ -417,7 +446,7 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
       // Retry logic for rate limiting (429 errors)
       const maxRetries = 5;
       let lastError: any;
-      
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           // Wait before retrying (exponential backoff starting at 10s)
@@ -497,7 +526,7 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
   app.post("/api/rewrite-reading-text", async (req, res) => {
     try {
       const { lesson } = req.body as { lesson: Lesson };
-      
+
       if (!lesson) {
         return res.status(400).json({ error: "Lesson data is required" });
       }
@@ -505,8 +534,8 @@ Style: Clean, modern educational illustration with a minimalist aesthetic. Warm 
       // Extract all vocabulary terms
       const vocabularyWords = lesson.content.sections
         .flatMap(s => s.words || []);
-      
-      const vocabList = vocabularyWords.map(w => 
+
+      const vocabList = vocabularyWords.map(w =>
         `- ${w.term} (${w.partOfSpeech}): ${w.definition}`
       ).join("\n");
 
@@ -541,7 +570,7 @@ Respond with ONLY a JSON object in this exact format:
       });
 
       const content = response.choices[0]?.message?.content || "";
-      
+
       // Parse the JSON response
       let paragraphs;
       try {
@@ -562,7 +591,7 @@ Respond with ONLY a JSON object in this exact format:
         };
       }
 
-      res.json({ 
+      res.json({
         paragraph1: paragraphs.paragraph1,
         paragraph2: paragraphs.paragraph2,
         vocabularyUsed: vocabTerms,
@@ -577,7 +606,7 @@ Respond with ONLY a JSON object in this exact format:
   app.post("/api/generate-lesson-context", async (req, res) => {
     try {
       const { lesson } = req.body as { lesson: Lesson };
-      
+
       if (!lesson) {
         return res.status(400).json({ error: "Lesson data is required" });
       }
@@ -602,13 +631,72 @@ Provide only the context summary.`;
         max_tokens: 200,
       });
 
-      const context = response.choices[0]?.message?.content || 
+      const context = response.choices[0]?.message?.content ||
         `ESL lesson about ${lesson.topic} for ${lesson.cefrLevel} learners.`;
 
       res.json({ context });
     } catch (error) {
       console.error("Error generating context:", error);
       res.status(500).json({ error: "Failed to generate context" });
+    }
+  });
+
+  // Generate voiceover script for the reel
+  app.post("/api/generate-script", async (req, res) => {
+    try {
+      const { reel, tone = "professional" } = req.body as {
+        reel: LessonReel;
+        tone?: "professional" | "casual" | "fun";
+      };
+
+      if (!reel) {
+        return res.status(400).json({ error: "Reel data is required" });
+      }
+
+      const { generateVoiceoverScript, generateScriptText, generateSRT } = await import("./scriptGenerator");
+
+      const script = await generateVoiceoverScript(reel, tone);
+      const scriptText = generateScriptText(script);
+      const srtContent = generateSRT(script);
+
+      res.json({
+        script,
+        scriptText,
+        srtContent,
+      });
+    } catch (error) {
+      console.error("Error generating script:", error);
+      res.status(500).json({ error: "Failed to generate script" });
+    }
+  });
+
+  // Generate AI-enhanced script with engagement optimization
+  app.post("/api/enhance-script", async (req, res) => {
+    try {
+      const { script, cefrLevel, tone = "professional" } = req.body as {
+        script: any;
+        cefrLevel: string;
+        tone?: "professional" | "casual" | "fun";
+      };
+
+      if (!script) {
+        return res.status(400).json({ error: "Script data is required" });
+      }
+
+      const { enhanceScriptWithAI, generateScriptText, generateSRT } = await import("./scriptGenerator");
+
+      const enhancedScript = await enhanceScriptWithAI(script, cefrLevel, tone);
+      const scriptText = generateScriptText(enhancedScript);
+      const srtContent = generateSRT(enhancedScript);
+
+      res.json({
+        script: enhancedScript,
+        scriptText,
+        srtContent,
+      });
+    } catch (error) {
+      console.error("Error enhancing script:", error);
+      res.status(500).json({ error: "Failed to enhance script" });
     }
   });
 

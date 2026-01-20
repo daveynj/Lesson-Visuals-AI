@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Upload, 
-  Wand2, 
-  Download, 
-  ChevronLeft, 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Upload,
+  Wand2,
+  Download,
+  ChevronLeft,
   ChevronRight,
   Sparkles,
   BookOpen,
@@ -21,26 +22,34 @@ import {
   HelpCircle,
   Image as ImageIcon,
   FileText,
+  Settings,
+  Archive,
+  Zap,
+  Lightbulb,
 } from "lucide-react";
-import type { Lesson, LessonReel, GeneratedSlide, Slide } from "@shared/schema";
+import { BrandSettingsPanel, useBrandSettings, type BrandSettings } from "@/components/BrandSettings";
+import { downloadLessonBundle } from "@/lib/exportUtils";
+import type { Lesson, LessonReel, GeneratedSlide, Slide, OutputFormat, ScriptTone, outputFormatConfig } from "@shared/schema";
 
 type Step = "upload" | "preview" | "generating" | "results";
 
 const BRAND_COLORS = {
   primary: "#edc437",
-  secondary: "#051d40", 
+  secondary: "#051d40",
   background: "#fdfdfd",
 };
 
 function SlideTypeIcon({ type }: { type: string }) {
   switch (type) {
     case "title": return <BookOpen className="w-4 h-4" />;
+    case "hook": return <Zap className="w-4 h-4" />;
     case "objectives": return <GraduationCap className="w-4 h-4" />;
     case "vocabulary": return <MessageSquare className="w-4 h-4" />;
     case "grammar": return <FileText className="w-4 h-4" />;
     case "reading": return <BookOpen className="w-4 h-4" />;
     case "activity": return <Sparkles className="w-4 h-4" />;
     case "quiz": return <HelpCircle className="w-4 h-4" />;
+    case "answer": return <Lightbulb className="w-4 h-4" />;
     case "summary": return <CheckCircle className="w-4 h-4" />;
     case "outro": return <Sparkles className="w-4 h-4" />;
     default: return <FileText className="w-4 h-4" />;
@@ -49,13 +58,13 @@ function SlideTypeIcon({ type }: { type: string }) {
 
 function SlidePreview({ slide, imageData, slideRef }: { slide: Slide; imageData?: string; slideRef?: React.RefObject<HTMLDivElement> }) {
   const baseStyle = "aspect-[9/16] rounded-md flex flex-col overflow-hidden";
-  
+
   if (imageData) {
     return (
-      <div 
+      <div
         ref={slideRef}
         className={baseStyle}
-        style={{ 
+        style={{
           backgroundImage: `url(${imageData})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
@@ -72,17 +81,17 @@ function SlidePreview({ slide, imageData, slideRef }: { slide: Slide; imageData?
   }
 
   return (
-    <div 
+    <div
       ref={slideRef}
       className={baseStyle}
       style={{ backgroundColor: BRAND_COLORS.background }}
     >
-      <div 
+      <div
         className="p-4 text-center"
         style={{ backgroundColor: BRAND_COLORS.secondary }}
       >
-        <Badge 
-          variant="secondary" 
+        <Badge
+          variant="secondary"
           className="text-xs"
           style={{ backgroundColor: BRAND_COLORS.primary, color: BRAND_COLORS.secondary }}
         >
@@ -113,7 +122,7 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           </div>
         </div>
       );
-      
+
     case "objectives":
       return (
         <div className="space-y-4">
@@ -128,7 +137,7 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           </ul>
         </div>
       );
-      
+
     case "vocabulary":
       return (
         <div className="text-center space-y-3">
@@ -141,7 +150,7 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           )}
         </div>
       );
-      
+
     case "grammar":
       return (
         <div className="space-y-3">
@@ -190,15 +199,15 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           )}
         </div>
       );
-      
+
     case "quiz":
       // Handle question as either string or object
-      const questionText = typeof slide.question === 'object' 
+      const questionText = typeof slide.question === 'object'
         ? (slide.question as { question?: string }).question || JSON.stringify(slide.question)
         : slide.question;
-      const questionOptions = slide.options || 
+      const questionOptions = slide.options ||
         (typeof slide.question === 'object' ? (slide.question as { options?: string[] }).options : undefined);
-      
+
       return (
         <div className="space-y-4">
           <div className="text-center">
@@ -210,8 +219,8 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           {questionOptions && Array.isArray(questionOptions) && (
             <div className="space-y-3 mt-4">
               {questionOptions.map((opt, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className="p-3 rounded text-xl text-center"
                   style={{ backgroundColor: `${accentColor}20`, color: textColor }}
                 >
@@ -222,15 +231,15 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           )}
         </div>
       );
-      
+
     case "summary":
       return (
         <div className="space-y-4">
           <h3 className="text-2xl font-semibold text-center" style={{ color: textColor }}>{slide.title}</h3>
           <div className="flex flex-wrap justify-center gap-3">
             {slide.keyPoints.map((point, i) => (
-              <Badge 
-                key={i} 
+              <Badge
+                key={i}
                 className="text-lg px-4 py-2"
                 style={{ backgroundColor: accentColor, color: textColor }}
               >
@@ -240,7 +249,7 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           </div>
         </div>
       );
-      
+
     case "outro":
       return (
         <div className="text-center space-y-4">
@@ -250,7 +259,7 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
           )}
         </div>
       );
-      
+
     default:
       return <p className="text-xl text-center" style={{ color: textColor }}>Slide content</p>;
   }
@@ -292,9 +301,9 @@ export default function Home() {
       // Rewrite reading text using Kimi K2 with all vocabulary
       try {
         const readingResponse = await apiRequest("POST", "/api/rewrite-reading-text", { lesson: data });
-        const readingData = await readingResponse.json() as { 
-          paragraph1: string; 
-          paragraph2: string; 
+        const readingData = await readingResponse.json() as {
+          paragraph1: string;
+          paragraph2: string;
           vocabularyUsed: string;
         };
 
@@ -303,7 +312,7 @@ export default function Home() {
         if (readingIndex !== -1) {
           const originalReading = reelData.slides[readingIndex].slide as { title: string };
           const baseTitle = originalReading.title?.replace(/^Reading Text:\s*/i, "") || "Reading";
-          
+
           // Create 2 reading slides
           const reading1 = {
             slide: {
@@ -319,7 +328,7 @@ export default function Home() {
             imageData: undefined,
             imagePrompt: undefined,
           };
-          
+
           const reading2 = {
             slide: {
               id: Math.random().toString(36).substring(2, 9),
@@ -386,7 +395,7 @@ export default function Home() {
 
   const generateImages = async () => {
     if (!reel) return;
-    
+
     setIsGenerating(true);
     setStep("generating");
     setGenerationProgress(0);
@@ -444,7 +453,7 @@ export default function Home() {
 
     toast({
       title: "Reel generated",
-      description: failed > 0 
+      description: failed > 0
         ? `Created ${completed - failed} images (${failed} failed)`
         : `Successfully created ${completed} visual slides`,
     });
@@ -477,15 +486,15 @@ export default function Home() {
     slideEl.style.display = "flex";
     slideEl.style.flexDirection = "column";
     slideEl.style.fontFamily = "system-ui, -apple-system, sans-serif";
-    
+
     const slide = genSlide.slide;
-    
+
     if (genSlide.imageData) {
       // Image slide with text overlay
       slideEl.style.backgroundImage = `url(${genSlide.imageData})`;
       slideEl.style.backgroundSize = "cover";
       slideEl.style.backgroundPosition = "center";
-      
+
       const overlay = document.createElement("div");
       overlay.style.flex = "1";
       overlay.style.display = "flex";
@@ -493,19 +502,19 @@ export default function Home() {
       overlay.style.justifyContent = "flex-end";
       overlay.style.padding = "60px";
       overlay.style.background = "linear-gradient(to top, rgba(5,29,64,0.95) 0%, rgba(5,29,64,0.85) 30%, rgba(5,29,64,0.4) 70%, transparent 100%)";
-      
+
       overlay.innerHTML = renderSlideTextForDownload(slide, true);
       slideEl.appendChild(overlay);
     } else {
       // Text-only slide
       slideEl.style.backgroundColor = BRAND_COLORS.background;
-      
+
       const header = document.createElement("div");
       header.style.padding = "40px";
       header.style.textAlign = "center";
       header.style.backgroundColor = BRAND_COLORS.secondary;
       header.innerHTML = `<span style="background-color: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.secondary}; padding: 8px 16px; border-radius: 4px; font-size: 24px; font-weight: 600;">${slide.type.toUpperCase()}</span>`;
-      
+
       const content = document.createElement("div");
       content.style.flex = "1";
       content.style.padding = "60px";
@@ -513,13 +522,13 @@ export default function Home() {
       content.style.flexDirection = "column";
       content.style.justifyContent = "center";
       content.innerHTML = renderSlideTextForDownload(slide, false);
-      
+
       slideEl.appendChild(header);
       slideEl.appendChild(content);
     }
-    
+
     container.appendChild(slideEl);
-    
+
     try {
       const canvas = await html2canvas(slideEl, {
         scale: 1,
@@ -527,7 +536,7 @@ export default function Home() {
         allowTaint: true,
         backgroundColor: null,
       });
-      
+
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
       link.download = `slide-${slideIndex + 1}-${slide.type}.png`;
@@ -540,7 +549,7 @@ export default function Home() {
   const renderSlideTextForDownload = (slide: Slide, onImage: boolean): string => {
     const textColor = onImage ? "#ffffff" : "#051d40";
     const accentColor = "#edc437";
-    
+
     switch (slide.type) {
       case "title":
         return `
@@ -603,7 +612,7 @@ export default function Home() {
           </div>
         `;
       case "quiz":
-        const questionText = typeof slide.question === 'object' 
+        const questionText = typeof slide.question === 'object'
           ? (slide.question as { question?: string }).question || ""
           : slide.question;
         const opts = slide.options || (typeof slide.question === 'object' ? (slide.question as { options?: string[] }).options : undefined);
@@ -637,18 +646,18 @@ export default function Home() {
 
   const downloadAll = async () => {
     if (!reel) return;
-    
+
     toast({
       title: "Preparing downloads",
       description: `Preparing ${reel.slides.length} slides for download...`,
     });
-    
+
     for (let i = 0; i < reel.slides.length; i++) {
       await downloadSlideAsImage(reel.slides[i], i);
       // Small delay between downloads to prevent browser issues
       await new Promise(resolve => setTimeout(resolve, 300));
     }
-    
+
     toast({
       title: "Download complete",
       description: `Downloaded ${reel.slides.length} slides`,
@@ -666,13 +675,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div 
+      <div
         className="border-b p-4"
         style={{ backgroundColor: BRAND_COLORS.secondary }}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div 
+            <div
               className="p-2 rounded-md"
               style={{ backgroundColor: BRAND_COLORS.primary }}
             >
@@ -683,21 +692,19 @@ export default function Home() {
               <p className="text-xs text-white/70">Visual ESL Lesson Generator</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {["upload", "preview", "generating", "results"].map((s, i) => (
               <div
                 key={s}
-                className={`flex items-center gap-1 text-xs ${
-                  step === s ? "text-white" : "text-white/40"
-                }`}
-              >
-                <div 
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    step === s 
-                      ? "text-[#051d40]" 
-                      : "bg-white/20 text-white/60"
+                className={`flex items-center gap-1 text-xs ${step === s ? "text-white" : "text-white/40"
                   }`}
+              >
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === s
+                      ? "text-[#051d40]"
+                      : "bg-white/20 text-white/60"
+                    }`}
                   style={step === s ? { backgroundColor: BRAND_COLORS.primary } : {}}
                 >
                   {i + 1}
@@ -724,9 +731,8 @@ export default function Home() {
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
-                  className={`border-2 border-dashed rounded-md p-8 text-center transition-colors cursor-pointer ${
-                    isDragOver ? "border-primary bg-primary/5" : "border-border"
-                  }`}
+                  className={`border-2 border-dashed rounded-md p-8 text-center transition-colors cursor-pointer ${isDragOver ? "border-primary bg-primary/5" : "border-border"
+                    }`}
                   data-testid="dropzone-upload"
                 >
                   <input
@@ -738,7 +744,7 @@ export default function Home() {
                     data-testid="input-file"
                   />
                   <label htmlFor="file-upload" className="cursor-pointer">
-                    <Upload 
+                    <Upload
                       className="w-12 h-12 mx-auto mb-4"
                       style={{ color: BRAND_COLORS.primary }}
                     />
@@ -786,9 +792,8 @@ export default function Home() {
                         {reel.slides.map((genSlide, index) => (
                           <div
                             key={genSlide.slide.id}
-                            className={`p-3 rounded-md flex items-center gap-3 cursor-pointer hover-elevate ${
-                              currentSlideIndex === index ? "bg-accent" : ""
-                            }`}
+                            className={`p-3 rounded-md flex items-center gap-3 cursor-pointer hover-elevate ${currentSlideIndex === index ? "bg-accent" : ""
+                              }`}
                             onClick={() => setCurrentSlideIndex(index)}
                             data-testid={`slide-item-${index}`}
                           >
@@ -807,7 +812,7 @@ export default function Home() {
                   <div className="flex flex-col items-center">
                     <h4 className="text-sm font-medium mb-3">Preview</h4>
                     <div className="w-48 sm:w-56">
-                      <SlidePreview 
+                      <SlidePreview
                         slide={reel.slides[currentSlideIndex].slide}
                         imageData={reel.slides[currentSlideIndex].imageData}
                       />
@@ -839,7 +844,7 @@ export default function Home() {
                 </div>
 
                 <div className="mt-6 flex justify-center">
-                  <Button 
+                  <Button
                     onClick={generateImages}
                     size="lg"
                     className="gap-2"
@@ -859,7 +864,7 @@ export default function Home() {
           <div className="max-w-xl mx-auto">
             <Card>
               <CardContent className="pt-6 text-center space-y-4">
-                <div 
+                <div
                   className="w-16 h-16 rounded-full mx-auto flex items-center justify-center animate-pulse"
                   style={{ backgroundColor: BRAND_COLORS.primary }}
                 >
@@ -869,7 +874,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">
                   Creating branded illustrations for each slide...
                 </p>
-                
+
                 <div className="space-y-2">
                   <Progress value={generationProgress} className="h-2" />
                   <p className="text-sm text-muted-foreground">
@@ -900,8 +905,8 @@ export default function Home() {
                     {reel.slides.filter(s => s.imageData).length} visual slides generated
                   </p>
                 </div>
-                <Button 
-                  onClick={downloadAll} 
+                <Button
+                  onClick={downloadAll}
                   className="gap-2"
                   style={{ backgroundColor: BRAND_COLORS.primary, color: BRAND_COLORS.secondary }}
                   data-testid="button-download-all"
@@ -917,9 +922,8 @@ export default function Home() {
                       {reel.slides.map((genSlide, index) => (
                         <div
                           key={genSlide.slide.id}
-                          className={`p-3 rounded-md flex items-center gap-3 cursor-pointer hover-elevate ${
-                            currentSlideIndex === index ? "bg-accent" : ""
-                          }`}
+                          className={`p-3 rounded-md flex items-center gap-3 cursor-pointer hover-elevate ${currentSlideIndex === index ? "bg-accent" : ""
+                            }`}
                           onClick={() => setCurrentSlideIndex(index)}
                           data-testid={`result-slide-${index}`}
                         >
@@ -939,7 +943,7 @@ export default function Home() {
 
                   <div className="flex flex-col items-center">
                     <div className="w-56 sm:w-64">
-                      <SlidePreview 
+                      <SlidePreview
                         slide={reel.slides[currentSlideIndex].slide}
                         imageData={reel.slides[currentSlideIndex].imageData}
                       />
