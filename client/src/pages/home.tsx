@@ -702,8 +702,8 @@ export default function Home() {
               >
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === s
-                      ? "text-[#051d40]"
-                      : "bg-white/20 text-white/60"
+                    ? "text-[#051d40]"
+                    : "bg-white/20 text-white/60"
                     }`}
                   style={step === s ? { backgroundColor: BRAND_COLORS.primary } : {}}
                 >
@@ -905,15 +905,65 @@ export default function Home() {
                     {reel.slides.filter(s => s.imageData).length} visual slides generated
                   </p>
                 </div>
-                <Button
-                  onClick={downloadAll}
-                  className="gap-2"
-                  style={{ backgroundColor: BRAND_COLORS.primary, color: BRAND_COLORS.secondary }}
-                  data-testid="button-download-all"
-                >
-                  <Download className="w-4 h-4" />
-                  Download All
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={downloadAll}
+                    className="gap-2"
+                    style={{ backgroundColor: BRAND_COLORS.primary, color: BRAND_COLORS.secondary }}
+                    data-testid="button-download-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download All
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      if (!reel) return;
+                      toast({
+                        title: "Generating script...",
+                        description: "Creating voiceover script and subtitles",
+                      });
+                      try {
+                        const response = await apiRequest("POST", "/api/generate-script", {
+                          reel,
+                          tone: "professional",
+                        });
+                        const data = await response.json();
+                        // Download script.txt
+                        const blob = new Blob([data.scriptText], { type: "text/plain" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "script.txt";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        // Download SRT
+                        const srtBlob = new Blob([data.srtContent], { type: "text/plain" });
+                        const srtUrl = URL.createObjectURL(srtBlob);
+                        const srtA = document.createElement("a");
+                        srtA.href = srtUrl;
+                        srtA.download = "captions.srt";
+                        srtA.click();
+                        URL.revokeObjectURL(srtUrl);
+                        toast({
+                          title: "Script generated!",
+                          description: "Downloaded script.txt and captions.srt",
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "Script generation failed",
+                          description: "Please try again",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    variant="outline"
+                    className="gap-2"
+                    data-testid="button-generate-script"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Get Script + Subtitles
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
