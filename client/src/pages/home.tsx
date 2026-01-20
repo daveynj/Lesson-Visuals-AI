@@ -111,6 +111,32 @@ function SlideTextContent({ slide, onImage = false }: { slide: Slide; onImage?: 
   const accentColor = "#edc437";
 
   switch (slide.type) {
+    case "hook":
+      return (
+        <div className="text-center space-y-4">
+          <div className="text-5xl">🚀</div>
+          <h2 className="text-3xl font-bold" style={{ color: accentColor }}>{slide.hookText}</h2>
+          {slide.hookType && (
+            <Badge className="text-sm px-3 py-1" style={{ backgroundColor: `${accentColor}30`, color: textColor }}>
+              {slide.hookType.toUpperCase()}
+            </Badge>
+          )}
+        </div>
+      );
+
+    case "answer":
+      return (
+        <div className="text-center space-y-4">
+          <Badge className="text-lg px-4 py-2" style={{ backgroundColor: accentColor, color: "#051d40" }}>
+            Answer {slide.questionNumber}
+          </Badge>
+          <h3 className="text-3xl font-bold" style={{ color: accentColor }}>{slide.correctAnswer}</h3>
+          {slide.explanation && (
+            <p className="text-xl opacity-90" style={{ color: textColor }}>{slide.explanation}</p>
+          )}
+        </div>
+      );
+
     case "title":
       return (
         <div className="text-center space-y-3">
